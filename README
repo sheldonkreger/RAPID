@@ -1,8 +1,8 @@
 General Instructions
 
-1) Certain prerequisites need to be installed, use shell script bootstrap.sh to do this quickly
+1) Certain prerequisites need to be installed, use shell script install.sh to do this quickly
      -- Edit the line APPLICATION_DIR="/vagrant" to reflect the directory in which you copied the application
-     -- After designating the appropriate directory, run bootstrap.sh
+     -- After designating the appropriate directory, run install.sh
 
 2) Configure Postgres
      -- sudo su postgres
@@ -10,18 +10,22 @@ General Instructions
      -- createdb <DB_NAME>
 
 3) Configure Apache2
-     -- Example templates located at: <APP_DIR>/RAPID/external_configs/apache2/
+     -- Example templates located at: /external_configs/apache2/
 
-4) Configure RAPID configuration files to match your environment
-     -- Edit <APP_DIR>/RAPID/configurations.py
-     -- Edit <APP_DIR>/RAPID/settings.py
+4) Configure RAPID configuration file(s) to match your environment
+     -- Edit /RAPID/RAPID/settings/<settings_file>.py
+         * base.py = universal settings
+         * local.py = development
+         * staging.py = staging
+         * production.py = final settings
 
 5) Instantiate and sync your Django models
      -- python3 manage.py syncdb
 
 6) Setup celery worker daemons
-     -- Scripts and instructions located at: <APP_DIR>/RAPID/external_configs/celery/
+     -- Scripts located at: /external_configs/celery/
+     -- Instructions located at: /docs/CELERY
 
-7) Retrieve and decompress Geo Lite database file and place in <APP_DIR>/RAPID/
+7) Retrieve and decompress Geo Lite database file and place in /RAPID/core/
      -- wget "http://geolite.maxmind.com/download/geoip/database/GeoLite2-City.mmdb.gz"
      -- gunzip GeoLite2-City.mmdb.gz
