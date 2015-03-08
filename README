@@ -8,6 +8,8 @@ General Instructions
      -- sudo su postgres
      -- createuser <USERNAME> --pwprompt
      -- createdb <DB_NAME>
+     -- psql
+     -- ALTER USER <USERNAME> CREATEDB;
 
 3) Configure Apache2
      -- Example templates located at: /external_configs/apache2/
