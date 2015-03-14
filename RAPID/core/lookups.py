@@ -51,23 +51,23 @@ def resolve_domain(domain):
 
     except dns.resolver.NXDOMAIN:
         logger.debug("NX Domain")
-        return None
+        return []
 
     except dns.resolver.Timeout:
         logger.debug("Query Timeout")
-        return None
+        return []
 
     except dns.resolver.NoAnswer:
         logger.debug("No Answer")
-        return None
+        return []
 
     except dns.resolver.NoNameservers:
         logger.debug("No Name Server")
-        return None
+        return []
 
     except Exception as unexpected_error:
         logger.error("Unexpected error %s" % unexpected_error)
-        return None
+        return []
 
 
 def lookup_domain_whois(domain):
