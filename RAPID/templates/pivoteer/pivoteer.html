@@ -65,7 +65,7 @@
 
   </div>
 
-{%  endblock %}
+{% endblock content%}
 
 
 {% block sidekick %}
@@ -100,7 +100,7 @@
 
     </div>
 
-{% endblock %}
+{% endblock sidekick %}
 
 
 {% block form_errors %}
@@ -115,11 +115,11 @@
       {{ SubmissionForm.indicator.errors }}
     </div>
   {% endif %}
-{% endblock %}
+{% endblock form_errors %}
 
 
-{% block js_additions %}
-
+{% block javascript %}
+  {{ block.super }}
   <script src="{% static "pivoteer.js" %}"></script>
 
-{% endblock %}
+{% endblock javascript %}

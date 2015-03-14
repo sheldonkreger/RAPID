@@ -1,5 +1,5 @@
 import os
-from RAPID.RAPID.settings.base import *
+from .base import *
 
 BASE_SITE_URL = 'https://rapidpivot.com'
 AMQP_URL = 'amqp://guest:guest@localhost:5672//'

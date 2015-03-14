@@ -11,7 +11,8 @@ TEMPLATE_ROOT = BASE_DIR.child("templates")
 STATICFILES_DIRS = (
     STATIC_ROOT.child("css"),
     STATIC_ROOT.child("js"),
-    STATIC_ROOT.child("fonts"),
+    STATIC_ROOT.child("bootstrap-3.3.2"),
+    STATIC_ROOT.child("DataTables-1.10.5"),
 )
 
 TEMPLATE_DIRS = (

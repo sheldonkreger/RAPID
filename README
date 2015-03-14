@@ -50,3 +50,9 @@ General Instructions
 8) Retrieve and decompress Geo Lite database file and place in /RAPID/core/
      -- wget "http://geolite.maxmind.com/download/geoip/database/GeoLite2-City.mmdb.gz"
      -- gunzip GeoLite2-City.mmdb.gz
+
+9) Download bootstrap and Datatables into static
+     -- wget https://github.com/twbs/bootstrap/releases/download/v3.3.2/bootstrap-3.3.2-dist.zip
+     -- http://datatables.net/releases/DataTables-1.10.5.zip
+
+10) Move css, js, bootstrap-3.3.2, and DataTables-1.10.5 folders into directory where your webserver is serving static files
