@@ -21,13 +21,32 @@ General Instructions
          * staging.py = staging
          * production.py = final settings
 
-5) Instantiate and sync your Django models
+5) Create JSON file "secrets.json" in the Django project directory (same directory as manage.py).
+   This will contain your secret/sensitive values, for example:
+
+     {
+       "FILENAME": "secrets.json",
+       "SECRET_KEY": "<SECRET_KEY>",
+       "SQL_NAME": "<DATABASE_NAME>",
+       "SQL_HOST": "<DATABASE_IP>",
+       "SQL_USER": "<DATABASE_USERNAME>",
+       "SQL_PASS": "<DATABASE_PASSWORD>",
+       "EMAIL_HOST": "<EMAIL_HOST>",
+       "EMAIL_USER": "<EMAIL_USERNAME>",
+       "EMAIL_PASS": "<EMAIL_PASSWORD>",
+       "EMAIL_PORT": "<EMAIL_PORT>",
+       "IID_USER": "<INTERNET_IDENTITY_USERNAME>",
+       "IID_PASS": "<INTERNET_IDENTITY_PASSWORD>",
+       "PASSIVE_TOTAL_API": "<PASSIVE_TOTAL_API_KEY>"
+     }
+
+6) Instantiate and sync your Django models
      -- python3 manage.py syncdb
 
-6) Setup celery worker daemons
+7) Setup celery worker daemons
      -- Scripts located at: /external_configs/celery/
      -- Instructions located at: /docs/CELERY
 
-7) Retrieve and decompress Geo Lite database file and place in /RAPID/core/
+8) Retrieve and decompress Geo Lite database file and place in /RAPID/core/
      -- wget "http://geolite.maxmind.com/download/geoip/database/GeoLite2-City.mmdb.gz"
      -- gunzip GeoLite2-City.mmdb.gz

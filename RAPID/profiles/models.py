@@ -55,6 +55,7 @@ class ProfileManager(BaseUserManager):
             password=password,
         )
 
+        user.is_staff = True
         user.is_admin = True
         user.save(using=self._db)
         return user
@@ -87,7 +88,7 @@ class Profile(AbstractBaseUser):
     domain_list = TextArrayField(default=[])
 
     USERNAME_FIELD = 'email'
-    #REQUIRED_FIELDS = ['is_active']
+    # REQUIRED_FIELDS = ['is_staff']
 
     objects = ProfileManager()
 
@@ -98,11 +99,6 @@ class Profile(AbstractBaseUser):
     def get_short_name(self):
         # The user is identified by their email address
         return self.email
-
-    @property
-    def is_staff(self):
-        # Simplest possible answer: All admins are staff
-        return self.is_admin
 
     @property
     def is_superuser(self):
