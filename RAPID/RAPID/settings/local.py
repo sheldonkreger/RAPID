@@ -14,10 +14,7 @@ EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 
 ALLOWED_HOSTS = []
 
-TEMPLATE_DIRS += (
-    TEMPLATE_ROOT.child("errors"),
-)
-
+# TEMPLATE_DIRS += ("",)
 # INSTALLED_APPS += ("",)
 
 # Basic Logging Configuration
