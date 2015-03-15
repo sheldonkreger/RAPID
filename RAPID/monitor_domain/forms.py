@@ -14,12 +14,12 @@ class SubmissionForm(forms.Form):
 
     def clean_domains(self):
         submission = self.cleaned_data.get('domains')
-        domain_list = re.split(r'[,;|\n ]+', submission)
+        domain_list = re.split(r'[,;|\n\r ]+', submission)
         validated_submissions = []
 
         for domain in domain_list:
 
-            domain = domain.lower()
+            domain = domain.rstrip().lower()
 
             if check_domain_valid(domain):
                 validated_submissions.append(domain)

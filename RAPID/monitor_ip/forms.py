@@ -15,12 +15,12 @@ class SubmissionForm(forms.Form):
 
     def clean_ips(self):
         submission = self.cleaned_data.get('ips')
-        ip_list = re.split(r'[,;|\n ]+', submission)
+        ip_list = re.split(r'[,;|\n\r ]+', submission)
         validated_submissions = []
 
         for ip in ip_list:
 
-            ip = ip.lower()
+            ip = ip.rstrip().lower()
 
             if check_ip_valid(ip):
                 validated_submissions.append(ip)
