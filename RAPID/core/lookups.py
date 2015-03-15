@@ -29,15 +29,14 @@ def geolocate_ip(ip):
 
     except ValueError:
         logger.debug("Invalid IP address passed")
-        return None
 
     except geoip2.errors.AddressNotFoundError:
         logger.debug("IP address not found in database")
-        return None
 
     except Exception as unexpected_error:
         logger.error("Unexpected error %s" % unexpected_error)
-        return None
+
+    return []
 
 
 def resolve_domain(domain):
@@ -90,7 +89,8 @@ def lookup_domain_whois(domain):
 
     except Exception as unexpected_error:
         logger.error("Unexpected error %s" % unexpected_error)
-        return None
+
+    return None
 
 
 def lookup_ip_whois(ip):
@@ -104,12 +104,11 @@ def lookup_ip_whois(ip):
 
     except ValueError:
         logger.debug("Invalid IP address passed")
-        return None
 
     except IPDefinedError:
         logger.debug("Private-use network IP address passed")
-        return None
 
     except Exception as unexpected_error:
         logger.error("Unexpected error %s" % unexpected_error)
-        return None
+
+    return None

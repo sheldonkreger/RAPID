@@ -5,7 +5,7 @@ from .models import DomainMonitor, DomainAlert
 
 class DomainMonitorAdmin(admin.ModelAdmin):
     # exclude = ('lookup_interval',)
-    list_display = ('domain_name',)
+    list_display = ('domain_name', 'last_hosts')
 
 
 class DomainAlertAdmin(admin.ModelAdmin):
