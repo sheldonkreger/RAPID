@@ -1,4 +1,5 @@
 import os
+import datetime
 import logging
 import tldextract
 import pythonwhois
@@ -6,6 +7,7 @@ import dns.resolver
 import geoip2.database
 from ipwhois import IPWhois
 from ipwhois.ipwhois import IPDefinedError
+from monitor_domain.models import DomainAlert
 
 logger = logging.getLogger(__name__)
 current_directory = os.path.dirname(__file__)
@@ -50,24 +52,26 @@ def resolve_domain(domain):
         return answer
 
     except dns.resolver.NXDOMAIN:
-        logger.debug("NX Domain")
-        return []
+        alert = "NX Domain"
 
     except dns.resolver.Timeout:
-        logger.debug("Query Timeout")
-        return []
+        alert = "Query Timeout"
 
     except dns.resolver.NoAnswer:
-        logger.debug("No Answer")
-        return []
+        alert = "No Answer"
 
     except dns.resolver.NoNameservers:
-        logger.debug("No Name Server")
-        return []
+        alert = "No Name Server"
 
     except Exception as unexpected_error:
-        logger.error("Unexpected error %s" % unexpected_error)
-        return []
+        alert = "Unexpected error %s" % unexpected_error
+
+    new_alert = DomainAlert(domain_name=domain,
+                            alert_text=alert,
+                            alert_time=datetime.datetime.utcnow())
+    new_alert.save()
+
+    return []
 
 
 def lookup_domain_whois(domain):

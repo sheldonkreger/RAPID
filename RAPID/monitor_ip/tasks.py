@@ -111,11 +111,11 @@ class IpMonitoring(PeriodicTask):
     def check_overdue(self):
         # Check if a lookup is overdue
         overdue_lookup = IpMonitor.objects.filter(next_lookup__lt=self.current_time)
-        overdue_text = 'Overdue lookup rescheduled'
+        # overdue_text = 'Overdue lookup rescheduled'
 
         for entry in overdue_lookup:
-            self.create_alert(entry.ip_address, overdue_text)
-            entry.next_lookup = self.current_time
+            # self.create_alert(entry.ip_address, overdue_text)
+            entry.next_lookup = self.current_time + datetime.timedelta(minutes=5)
             entry.save()
 
     def create_alert(self, ip_address, alert_text):
