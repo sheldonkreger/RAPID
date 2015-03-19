@@ -141,7 +141,7 @@ class ExportRecords(LoginRequiredMixin, View):
 
         if indicator and export == 'all':
             self.export_current(indicator)
-            self.export_passive(indicator)
+            self.export_passive(indicator, request)
             self.export_malware(indicator)
             self.export_other(indicator)
 
