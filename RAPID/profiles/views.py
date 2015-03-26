@@ -21,11 +21,14 @@ class RegisterProfile(FormView):
 
     form_class = RegistrationForm
     template_name = 'profiles/register.html'
+    msg_success = "Account successfully registered"
 
     def get_success_url(self):
         return reverse('login')
 
     def form_valid(self, form):
+        form.register_user()
+        messages.add_message(self.request, messages.SUCCESS, self.msg_success)
         return super(RegisterProfile, self).form_valid(form)
 
 

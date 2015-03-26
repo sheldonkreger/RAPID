@@ -7,7 +7,7 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.contrib.auth import get_user_model, authenticate
 from django.contrib.auth.tokens import default_token_generator
 
-from .models import RegistrationToken
+from .models import RegistrationToken, Profile
 from core.tasks import deliver_email
 
 
@@ -136,6 +136,14 @@ class RegistrationForm(forms.Form):  # forms.ModelForm?
             raise forms.ValidationError(token_error)
 
         return token
+
+    def register_user(self):
+        email = self.cleaned_data.get('email')
+        password = self.cleaned_data.get('password2')
+        token = self.cleaned_data.get('registration_code')
+
+        Profile.objects.create_user(email, password)
+        RegistrationToken.objects.get(token__exact=token).delete()
 
 
 class ChangePasswordForm(forms.Form):
