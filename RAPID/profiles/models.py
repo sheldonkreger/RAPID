@@ -35,24 +35,25 @@ class RegistrationToken(models.Model):
 
 class ProfileManager(BaseUserManager):
 
-    def create_user(self, email, password=None):
+    def create_user(self, email, password, **extra_fields):
 
         if not email:
             raise ValueError('Users must have an email address')
 
         user = self.model(
-            email=self.normalize_email(email),
+            email=self.normalize_email(email), **extra_fields
         )
 
         user.set_password(password)
         user.save(using=self._db)
         return user
 
-    def create_superuser(self, email, password):
+    def create_superuser(self, email, password, **extra_fields):
 
         user = self.create_user(
             email=email,
             password=password,
+            **extra_fields
         )
 
         user.is_staff = True
@@ -76,7 +77,7 @@ class ProfileManager(BaseUserManager):
 
 
 class Profile(AbstractBaseUser):
-
+    id = models.AutoField(primary_key=True)
     alerts = models.BooleanField(default=True)
     email = models.EmailField(unique=True)
     first_name = models.CharField(max_length=30, blank=True)
