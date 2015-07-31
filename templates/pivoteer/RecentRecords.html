@@ -1,0 +1,114 @@
+{% load pivoteer_extras %}
+
+<h3>Hosting Within Last 24 Hours</h3>
+{% if current_hosts %}
+    <table id="CR_table" class="table display">
+        <thead>
+          <tr>
+            <th>Resolution Date</th>
+            <th>Domain</th>
+            <th>IP Address</th>
+            <th>Source</th>
+          </tr>
+        </thead>
+        <tbody>
+            {% for record in current_hosts %}
+                <tr>
+                    <td>{{ record.info_date }}</td>
+                    <td>
+                        {% if record.info.domain != origin %}
+                            <span class="pivot">{{ record.info.domain }}</span>
+                        {% else %}
+                            {{ record.info.domain }}
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if record.info.ip != origin %}
+                            <span class="pivot">{{ record.info.ip }}</span>
+                        {% else %}
+                            {{ record.info.ip }}
+                        {% endif %}
+                    </td>
+                    <td>{{ record.get_info_source_display }}</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+{% else %}
+    <h4>No Records Found</h4>
+{% endif %}
+
+<h3>Most Recent WHOIS Record</h3>
+{% if current_whois %}
+    <table id="CW_table" class="table display">
+        <thead>
+        </thead>
+        <tbody>
+        <tr>
+
+        {% if current_whois.info.domain_name %}
+            <td>
+                <b>Lookup Date:</b><br>
+                {{ current_whois.info_date }}
+                <br><br>
+
+                <b>Domain Name:</b><br>
+                {{ current_whois.info.domain_name }}
+                <br><br>
+
+                <b>Status:</b><br>
+                {{ current_whois.info.status|join:", " }}
+                <br><br>
+
+                <b>Registrar:</b><br>
+                {{ current_whois.info.registrar|join:", " }}
+                <br><br>
+
+                <b>Updated:</b><br>
+                {{ current_whois.info.updated_date|join:", " }}
+                <br><br>
+
+                <b>Expires:</b><br>
+                {{ current_whois.info.expiration_date|join:", " }}
+                <br><br>
+
+                <b>Name Servers:</b><br>
+                {{ current_whois.info.nameservers|join:", " }}
+                <br><br>
+            </td>
+            <td>
+                {% for key, item in current_whois.info.contacts.items %}
+                    {% if item %}
+                        <b>{{ key|title }}</b><br>
+                        {% for subkey, subitem in item.items %}
+                            {{ subkey }}: {{ subitem }}<br>
+                        {% endfor %}
+                        <br>
+                    {% endif %}
+                {% endfor %}
+            </td>
+        {% elif current_whois.info.ip_address %}
+            <td>
+                <b>Lookup Date:</b> {{ current_whois.info_date }}<br>
+                <b>IP Address:</b> {{ current_whois.info.query }}<br>
+                <b>ASN CIDR:</b> {{ current_whois.info.asn_cidr }}<br>
+                <b>ASN ID:</b> {{ current_whois.info.asn }}<br>
+                <b>ASN Registry:</b> {{ current_whois.info.asn_registry }}<br>
+                <b>ASN Country Code:</b> {{ current_whois.info.asn_country_code }}<br>
+                <b>ASN Date:</b> {{ current_whois.info.asn_date }}<br>
+                <b>Referral:</b> {{ current_whois.info.referral }}<br>
+
+                {% for net in current_whois.info.nets %}
+                    <br>
+                    {% for key, item in net.items %}
+                        <b>{{ key|title }}:</b> {{ item }}<br>
+                    {% endfor %}
+                {% endfor %}
+            </td>
+        {% endif %}
+        </tr>
+        </tbody>
+    </table>
+{% else %}
+    <h4>No Records Found</h4>
+{% endif %}
