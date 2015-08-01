@@ -72,3 +72,16 @@ def discover_type(submission):
 
     else:
         return None
+
+
+def get_base_domain(submission):
+    # Extract base domain name for lookup
+    ext = tldextract.extract(submission)
+
+    if ext.domain and ext.tld:
+        delimiter = "."
+        sequence = (ext.domain, ext.tld)
+        domain_name = delimiter.join(sequence)
+        return domain_name
+
+    return None

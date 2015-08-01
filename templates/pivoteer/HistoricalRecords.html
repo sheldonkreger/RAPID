@@ -55,8 +55,8 @@
             {% for record in historical_whois %}
                 <tr>
                     {% if record.info.domain_name %}
-                        <td>{{ record.info_date }}</td>
-                        <td>{{ record.info_date }}</td>
+                        <td>{{ record.earliest }}</td>
+                        <td>{{ record.latest }}</td>
                         <td>
                             <b>Domain Name:</b><br>
                             {{ record.info.domain_name }}
@@ -93,9 +93,9 @@
                                 {% endif %}
                             {% endfor %}
                         </td>
-                    {% elif record.info.ip_address %}
-                        <td>{{ record.info_date }}</td>
-                        <td>{{ record.info_date }}</td>
+                    {% elif record.info.query %}
+                        <td>{{ record.earliest }}</td>
+                        <td>{{ record.latest }}</td>
                         <td>
                             <b>Lookup Date:</b> {{ record.info_date }}<br>
                             <b>IP Address:</b> {{ record.info.query }}<br>

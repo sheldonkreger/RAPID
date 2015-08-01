@@ -155,7 +155,7 @@ class ExportRecords(LoginRequiredMixin, View):
             self.export_historical(indicator, request)
 
         elif indicator and export == 'malware':
-            self.export_malware(indicator, request)
+            self.export_malware(indicator)
 
         return self.response
 
@@ -163,7 +163,6 @@ class ExportRecords(LoginRequiredMixin, View):
 
         hosts = IndicatorRecord.objects.recent_hosts(indicator)
         whois = IndicatorRecord.objects.recent_whois(indicator)
-        malware = IndicatorRecord.objects.recent_malware(indicator)
 
         for host in hosts:
             try:
@@ -177,12 +176,6 @@ class ExportRecords(LoginRequiredMixin, View):
 
             except:
                 pass
-
-        for record in malware:
-            entry = [record.info_date, record.info_source, record.info['C2'], record.info['md5'],
-                     record.info['sha1'], record.info['sha256'], record.info['link']]
-
-            self.writer.writerow(entry)
 
         self.line_separator()
         self.writer.writerow([whois.info])
@@ -192,7 +185,6 @@ class ExportRecords(LoginRequiredMixin, View):
 
         hosts = IndicatorRecord.objects.historical_hosts(indicator, request)
         whois = IndicatorRecord.objects.historical_whois(indicator)
-        malware = IndicatorRecord.objects.historical_malware(indicator)
 
         for host in hosts:
             try:
@@ -207,20 +199,21 @@ class ExportRecords(LoginRequiredMixin, View):
             except:
                 pass
 
-        for record in malware:
-            entry = [record.info_date, record.info_source, record.info['C2'], record.info['md5'],
-                     record.info['sha1'], record.info['sha256'], record.info['link']]
-
-            self.writer.writerow(entry)
-
         for record in whois:
             self.line_separator()
             self.writer.writerow([record.info])
 
         self.line_separator()
 
-    def export_malware(self, indicator, request):
-        pass
+    def export_malware(self, indicator):
+
+        malware = IndicatorRecord.objects.malware_records(indicator)
+
+        for record in malware:
+            entry = [record.info_date, record.info_source, record.info['C2'], record.info['md5'],
+                     record.info['sha1'], record.info['sha256'], record.info['link']]
+
+            self.writer.writerow(entry)
 
     def line_separator(self):
         self.writer.writerow([])

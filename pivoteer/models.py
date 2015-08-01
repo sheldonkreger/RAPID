@@ -1,10 +1,11 @@
 import pickle
 import hashlib
 import datetime
-import collections
 from django.db import models
 from django.db.models import Q
-from jsonfield import JSONField
+from django.db.models import Max, Min
+from django_pgjson.fields import JsonField
+from core.utilities import check_domain_valid, get_base_domain
 
 
 class IndicatorManager(models.Manager):
@@ -13,7 +14,8 @@ class IndicatorManager(models.Manager):
         record_type = 'HR'
 
         records = self.get_queryset().filter(Q(record_type=record_type),
-                                             Q(info__contains=indicator))
+                                             Q(info__at_domain__endswith=indicator) |
+                                             Q(info__at_ip__endswith=indicator))
         return records
 
     def recent_hosts(self, indicator):
@@ -22,7 +24,8 @@ class IndicatorManager(models.Manager):
 
         records = self.get_queryset().filter(Q(record_type=record_type),
                                              Q(info_date__gte=time_frame),
-                                             Q(info__contains=indicator))
+                                             Q(info__at_domain__endswith=indicator) |
+                                             Q(info__at_ip__endswith=indicator))
         return records
 
     def historical_hosts(self, indicator, request):
@@ -32,14 +35,16 @@ class IndicatorManager(models.Manager):
         if request.user.is_staff:
             records = self.get_queryset().filter(Q(record_type=record_type),
                                                  Q(info_date__lt=time_frame),
-                                                 Q(info__contains=indicator))
+                                                 Q(info__at_domain__endswith=indicator) |
+                                                 Q(info__at_ip__endswith=indicator))
 
         else:
             records = self.get_queryset().filter(~Q(info_source="PTO"),
                                                  ~Q(info_source="IID"),
                                                  Q(record_type=record_type),
                                                  Q(info_date__lt=time_frame),
-                                                 Q(info__contains=indicator))
+                                                 Q(info__at_domain__endswith=indicator) |
+                                                 Q(info__at_ip__endswith=indicator))
         return records
 
     def malware_records(self, indicator):
@@ -70,17 +75,25 @@ class IndicatorManager(models.Manager):
     def whois_records(self, indicator):
         record_type = 'WR'
 
+        if check_domain_valid(indicator):
+            indicator = get_base_domain(indicator)
+
         record = self.get_queryset().filter(Q(record_type=record_type),
-                                            Q(info__contains=indicator))
+                                            Q(info__at_query__endswith=indicator) |
+                                            Q(info__at_domain_name__endswith=indicator))
         return record
 
     def recent_whois(self, indicator):
         record_type = 'WR'
         time_frame = datetime.datetime.utcnow() + datetime.timedelta(hours=-24)
 
+        if check_domain_valid(indicator):
+            indicator = get_base_domain(indicator)
+
         record = self.get_queryset().filter(Q(record_type=record_type),
                                             Q(info_date__gte=time_frame),
-                                            Q(info__contains=indicator))
+                                            Q(info__at_query__endswith=indicator) |
+                                            Q(info__at_domain_name__endswith=indicator))
 
         if record:
             return record.latest('info_date')
@@ -89,12 +102,31 @@ class IndicatorManager(models.Manager):
 
     def historical_whois(self, indicator):
         record_type = 'WR'
-        time_frame = datetime.datetime.utcnow() + datetime.timedelta(hours=-24)
+        time_frame = datetime.datetime.utcnow() + datetime.timedelta(hours=-0)
 
-        records = self.get_queryset().filter(Q(record_type=record_type),
-                                             Q(info_date__lt=time_frame),
-                                             Q(info__contains=indicator))
-        return records
+        if check_domain_valid(indicator):
+            indicator = get_base_domain(indicator)
+
+        raw_records = self.get_queryset().filter(Q(record_type=record_type),
+                                                 Q(info_date__lt=time_frame),
+                                                 Q(info__at_query__endswith=indicator) |
+                                                 Q(info__at_domain_name__endswith=indicator)).values('info_hash',
+                                                                                                     'info_date')
+
+        tracking = []
+        unique_records = []
+        annotated_records = raw_records.annotate(latest=Max('info_date')).annotate(earliest=Min('info_date'))
+
+        for record in annotated_records:
+            hash_value = record['info_hash']
+
+            if hash_value not in tracking:
+                record_info = self.get_queryset().filter(info_hash=hash_value).values('info')[0]['info']
+                new_record = {'latest': record['latest'], 'earliest': record['earliest'], 'info': record_info}
+                unique_records.append(new_record)
+                tracking.append(hash_value)
+
+        return unique_records
 
 
 class IndicatorRecord(models.Model):
@@ -119,7 +151,7 @@ class IndicatorRecord(models.Model):
     created = models.DateTimeField(auto_now_add=True, editable=False)
     modified = models.DateTimeField(auto_now=True)
 
-    info = JSONField(load_kwargs={'object_pairs_hook': collections.OrderedDict})
+    info = JsonField()
     info_source = models.CharField(max_length=3, choices=source_choices)
     info_hash = models.CharField(max_length=40)
     info_date = models.DateTimeField()
@@ -156,5 +188,5 @@ class ExternalSessions(models.Model):
     service_choices = (('IID', 'Internet Identity'),)
 
     service = models.CharField(max_length=3, choices=service_choices)
-    cookie = JSONField(load_kwargs={'object_pairs_hook': collections.OrderedDict})
+    cookie = JsonField()
 

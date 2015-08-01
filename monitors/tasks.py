@@ -47,76 +47,81 @@ class IndicatorMonitoring(PeriodicTask):
 
         # Lookup domain resolutions
         for domain_lookup in domain_lookups:
+            owner = domain_lookup.owner
             last_hosts = domain_lookup.last_hosts
             domain_resolutions = resolve_domain(domain_lookup.domain_name)
 
-            for host in domain_resolutions:
+            if type(domain_resolutions) == list:
+                for host in domain_resolutions:
 
-                ip_location = geolocate_ip(host)
+                    ip_location = geolocate_ip(host)
 
-                try:
-                    record_entry = IndicatorRecord(record_type="HR",
-                                                   info_source="DNS",
-                                                   info_date=current_time,
-                                                   info={"geo_location": ip_location,
-                                                         "ip": host, "domain": domain_lookup.domain_name})
-                    record_entry.save()
-                except:
-                    pass
+                    try:
+                        record_entry = IndicatorRecord(record_type="HR",
+                                                       info_source="DNS",
+                                                       info_date=current_time,
+                                                       info={"geo_location": ip_location,
+                                                             "ip": host, "domain": domain_lookup.domain_name})
+                        record_entry.save()
+                    except:
+                        pass
 
-            if domain_resolutions and last_hosts:
-                # Check for new or missing hosts since last lookup
-                missing_hosts = list(set(last_hosts).difference(domain_resolutions))
-                new_hosts = list(set(domain_resolutions).difference(last_hosts))
+                if domain_resolutions and last_hosts:
+                    # Check for new or missing hosts since last lookup
+                    missing_hosts = list(set(last_hosts).difference(domain_resolutions))
+                    new_hosts = list(set(domain_resolutions).difference(last_hosts))
 
-                # Sanitize domain name for safe email content
-                sanitized_domain = domain_lookup.domain_name.replace('.', '[.]')
+                    # Sanitize domain name for safe email content
+                    sanitized_domain = domain_lookup.domain_name.replace('.', '[.]')
 
-                email_recipient = [domain_lookup.owner.email]
+                    email_recipient = [owner.email]
 
-                # Compose alert and email content for hosting changes
-                if missing_hosts and new_hosts:
-                    sanitized_missing = [host.replace('.', '[.]') for host in missing_hosts]
-                    sanitized_new = [host.replace('.', '[.]') for host in new_hosts]
+                    # Compose alert and email content for hosting changes
+                    if missing_hosts and new_hosts:
+                        sanitized_missing = [host.replace('.', '[.]') for host in missing_hosts]
+                        sanitized_new = [host.replace('.', '[.]') for host in new_hosts]
 
-                    alert_text = 'Removed hosts: %s' % ', '.join(missing_hosts)
-                    self.create_alert(domain_lookup.domain_name, alert_text)
+                        alert_text = 'Removed hosts: %s' % ', '.join(missing_hosts)
+                        self.create_alert(domain_lookup.domain_name, alert_text, owner)
 
-                    alert_text = 'New hosts: %s' % ', '.join(new_hosts)
-                    self.create_alert(domain_lookup.domain_name, alert_text)
+                        alert_text = 'New hosts: %s' % ', '.join(new_hosts)
+                        self.create_alert(domain_lookup.domain_name, alert_text, owner)
 
-                    email_subject = 'IP Address Changes for ' + sanitized_domain
-                    email_body = """ DNS lookup performed at %s indicates that the tracked
-                                     domain %s has dropped the following IP addresses: %s
-                                     and has added the following IP addresses: %s
-                                 """ % (str(current_time), sanitized_domain,
-                                        sanitized_missing, sanitized_new)
+                        email_subject = 'IP Address Changes for ' + sanitized_domain
+                        email_body = """ DNS lookup performed at %s indicates that the tracked
+                                         domain %s has dropped the following IP addresses: %s
+                                         and has added the following IP addresses: %s
+                                     """ % (str(current_time), sanitized_domain,
+                                            sanitized_missing, sanitized_new)
 
-                    deliver_email.delay(email_subject, email_body, email_recipient)
+                        deliver_email.delay(email_subject, email_body, email_recipient)
 
-                elif missing_hosts:
-                    sanitized_missing = [host.replace('.', '[.]') for host in missing_hosts]
-                    alert_text = 'Removed hosts: %s' % ', '.join(missing_hosts)
-                    self.create_alert(domain_lookup.domain_name, alert_text)
+                    elif missing_hosts:
+                        sanitized_missing = [host.replace('.', '[.]') for host in missing_hosts]
+                        alert_text = 'Removed hosts: %s' % ', '.join(missing_hosts)
+                        self.create_alert(domain_lookup.domain_name, alert_text, owner)
 
-                    email_subject = 'IP Address Drops for ' + sanitized_domain
-                    email_body = """ DNS lookup performed at %s indicates that the tracked
-                                     domain %s has dropped the following IP addresses: %s
-                                 """ % (str(current_time), sanitized_domain, sanitized_missing)
+                        email_subject = 'IP Address Drops for ' + sanitized_domain
+                        email_body = """ DNS lookup performed at %s indicates that the tracked
+                                         domain %s has dropped the following IP addresses: %s
+                                     """ % (str(current_time), sanitized_domain, sanitized_missing)
 
-                    deliver_email.delay(email_subject, email_body, email_recipient)
+                        deliver_email.delay(email_subject, email_body, email_recipient)
 
-                elif new_hosts:
-                    sanitized_new = [host.replace('.', '[.]') for host in new_hosts]
-                    alert_text = 'New hosts: %s' % ', '.join(new_hosts)
-                    self.create_alert(domain_lookup.domain_name, alert_text)
+                    elif new_hosts:
+                        sanitized_new = [host.replace('.', '[.]') for host in new_hosts]
+                        alert_text = 'New hosts: %s' % ', '.join(new_hosts)
+                        self.create_alert(domain_lookup.domain_name, alert_text, owner)
 
-                    email_subject = 'IP Address Additions for ' + sanitized_domain
-                    email_body = """ DNS lookup performed at %s indicates that the tracked
-                                     domain %s has changed to the following IP addresses: %s
-                                 """ % (str(current_time), sanitized_domain, sanitized_new)
+                        email_subject = 'IP Address Additions for ' + sanitized_domain
+                        email_body = """ DNS lookup performed at %s indicates that the tracked
+                                         domain %s has changed to the following IP addresses: %s
+                                     """ % (str(current_time), sanitized_domain, sanitized_new)
 
-                    deliver_email.delay(email_subject, email_body, email_recipient)
+                        deliver_email.delay(email_subject, email_body, email_recipient)
+            else:
+                alert_text = domain_resolutions
+                self.create_alert(domain_lookup.domain_name, alert_text, owner)
 
             # Update entry information
             domain_lookup.last_hosts = domain_resolutions
@@ -127,80 +132,86 @@ class IndicatorMonitoring(PeriodicTask):
         scraper = RobtexScraper()
 
         for ip_lookup in ip_lookups:
+            owner = ip_lookup.owner
             last_hosts = ip_lookup.last_hosts
             ip_resolutions = scraper.run(ip_lookup.ip_address)
             ip_location = geolocate_ip(ip_lookup.ip_address)
 
-            for host in ip_resolutions:
-                try:
-                    record_entry = IndicatorRecord(record_type="HR",
-                                                   info_source="REX",
-                                                   info_date=current_time,
-                                                   info={"geo_location": ip_location,
-                                                         "ip": ip_lookup.ip_address, "domain": host})
-                    record_entry.save()
-                except:
-                    pass
+            if type(ip_resolutions) == list:
 
-            if ip_resolutions and last_hosts:
-                # Check for new or missing hosts since last lookup
-                missing_hosts = list(set(last_hosts).difference(ip_resolutions))
-                new_hosts = list(set(ip_resolutions).difference(last_hosts))
+                for host in ip_resolutions:
+                    try:
+                        record_entry = IndicatorRecord(record_type="HR",
+                                                       info_source="REX",
+                                                       info_date=current_time,
+                                                       info={"geo_location": ip_location,
+                                                             "ip": ip_lookup.ip_address, "domain": host})
+                        record_entry.save()
+                    except:
+                        pass
 
-                # Sanitize ip address for safe email content
-                sanitized_ip = ip_lookup.ip_address.replace('.', '[.]')
+                if ip_resolutions and last_hosts:
+                    # Check for new or missing hosts since last lookup
+                    missing_hosts = list(set(last_hosts).difference(ip_resolutions))
+                    new_hosts = list(set(ip_resolutions).difference(last_hosts))
 
-                email_recipient = [ip_lookup.owner.email]
+                    # Sanitize ip address for safe email content
+                    sanitized_ip = ip_lookup.ip_address.replace('.', '[.]')
 
-                # Compose alert and email content for hosting changes
-                if missing_hosts and new_hosts:
-                    sanitized_missing = [host.replace('.', '[.]') for host in missing_hosts]
-                    sanitized_new = [host.replace('.', '[.]') for host in new_hosts]
+                    email_recipient = [owner.email]
 
-                    alert_text = 'Removed hosts: %s' % ', '.join(missing_hosts)
-                    self.create_alert(ip_lookup.ip_address, alert_text)
+                    # Compose alert and email content for hosting changes
+                    if missing_hosts and new_hosts:
+                        sanitized_missing = [host.replace('.', '[.]') for host in missing_hosts]
+                        sanitized_new = [host.replace('.', '[.]') for host in new_hosts]
 
-                    alert_text = 'New hosts: %s' % ', '.join(new_hosts)
-                    self.create_alert(ip_lookup.ip_address, alert_text)
+                        alert_text = 'Removed hosts: %s' % ', '.join(missing_hosts)
+                        self.create_alert(ip_lookup.ip_address, alert_text, owner)
 
-                    email_subject = 'Domain Changes for ' + sanitized_ip
-                    email_body = """ IP lookup performed at %s indicates that the tracked
-                                     IP address %s has dropped the following domains: %s
-                                     and has added the following domains: %s
-                                 """ % (str(current_time), sanitized_ip,
-                                        sanitized_missing, sanitized_new)
+                        alert_text = 'New hosts: %s' % ', '.join(new_hosts)
+                        self.create_alert(ip_lookup.ip_address, alert_text, owner)
 
-                    deliver_email.delay(email_subject, email_body, email_recipient)
+                        email_subject = 'Domain Changes for ' + sanitized_ip
+                        email_body = """ IP lookup performed at %s indicates that the tracked
+                                         IP address %s has dropped the following domains: %s
+                                         and has added the following domains: %s
+                                     """ % (str(current_time), sanitized_ip,
+                                            sanitized_missing, sanitized_new)
 
-                elif missing_hosts:
-                    sanitized_missing = [host.replace('.', '[.]') for host in missing_hosts]
-                    alert_text = 'Removed hosts: %s' % ', '.join(missing_hosts)
-                    self.create_alert(ip_lookup.ip_address, alert_text)
+                        deliver_email.delay(email_subject, email_body, email_recipient)
 
-                    email_subject = 'Domain Drops for ' + sanitized_ip
-                    email_body = """ IP lookup performed at %s indicates that the tracked
-                                     IP address %s has dropped the following domains: %s
-                                 """ % (str(current_time), sanitized_ip, sanitized_missing)
+                    elif missing_hosts:
+                        sanitized_missing = [host.replace('.', '[.]') for host in missing_hosts]
+                        alert_text = 'Removed hosts: %s' % ', '.join(missing_hosts)
+                        self.create_alert(ip_lookup.ip_address, alert_text, owner)
 
-                    deliver_email.delay(email_subject, email_body, email_recipient)
+                        email_subject = 'Domain Drops for ' + sanitized_ip
+                        email_body = """ IP lookup performed at %s indicates that the tracked
+                                         IP address %s has dropped the following domains: %s
+                                     """ % (str(current_time), sanitized_ip, sanitized_missing)
 
-                elif new_hosts:
-                    sanitized_new = [host.replace('.', '[.]') for host in new_hosts]
-                    alert_text = 'New hosts: %s' % ', '.join(new_hosts)
-                    self.create_alert(ip_lookup.ip_address, alert_text)
+                        deliver_email.delay(email_subject, email_body, email_recipient)
 
-                    email_subject = 'Domain Additions for ' + sanitized_ip
-                    email_body = """ IP lookup performed at %s indicates that the tracked
-                                     IP address %s has added the following domains: %s
-                                 """ % (str(current_time), sanitized_ip, sanitized_new)
+                    elif new_hosts:
+                        sanitized_new = [host.replace('.', '[.]') for host in new_hosts]
+                        alert_text = 'New hosts: %s' % ', '.join(new_hosts)
+                        self.create_alert(ip_lookup.ip_address, alert_text, owner)
 
-                    deliver_email.delay(email_subject, email_body, email_recipient)
+                        email_subject = 'Domain Additions for ' + sanitized_ip
+                        email_body = """ IP lookup performed at %s indicates that the tracked
+                                         IP address %s has added the following domains: %s
+                                     """ % (str(current_time), sanitized_ip, sanitized_new)
+
+                        deliver_email.delay(email_subject, email_body, email_recipient)
+            else:
+                alert_text = ip_resolutions
+                self.create_alert(ip_lookup.ip_address, alert_text, owner)
 
             # Update entry information
             ip_lookup.last_hosts = ip_resolutions
             ip_lookup.next_lookup = current_time + datetime.timedelta(hours=ip_lookup.lookup_interval)
             ip_lookup.save()
 
-    def create_alert(self, indicator, alert_text):
-        new_alert = IndicatorAlert(indicator=indicator, alert_text=alert_text)
+    def create_alert(self, indicator, alert_text, owner):
+        new_alert = IndicatorAlert(indicator=indicator, alert_text=alert_text, owner=owner)
         new_alert.save()

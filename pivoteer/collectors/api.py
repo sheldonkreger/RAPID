@@ -54,7 +54,7 @@ class PassiveTotal(object):
             return json_response
 
         except KeyError:
-            logging.warning("Unrecognized API resource")
+            logging.warning("Unrecognized API resource or malformed query")
 
         return None
 
@@ -69,6 +69,6 @@ class PassiveTotal(object):
             return json_response
 
         except KeyError:
-            logging.warning("Unrecognized API resource")
+            logging.warning("Unrecognized API resource or malformed query")
 
         return None

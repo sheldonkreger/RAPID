@@ -5,6 +5,7 @@ import pythonwhois
 import dns.resolver
 import geoip2.database
 from ipwhois import IPWhois
+from collections import OrderedDict
 from ipwhois.ipwhois import IPDefinedError
 from monitors.models import IndicatorAlert
 
@@ -20,8 +21,10 @@ def geolocate_ip(ip):
     try:
         response = reader.city(ip)
 
-        # Result list - city, state / province, country
-        results = {"city": response.city.name, "province": response.subdivisions.most_specific.name, "country": response.country.name}
+        # Geo-location results - city, state / province, country
+        results = OrderedDict({"city": response.city.name,
+                               "province": response.subdivisions.most_specific.name,
+                               "country": response.country.name})
         return results
 
     except ValueError:
@@ -59,13 +62,10 @@ def resolve_domain(domain):
     except dns.resolver.NoNameservers:
         alert = "No Name Server"
 
-    except Exception as unexpected_error:
-        alert = "Unexpected error %s" % unexpected_error
+    except Exception:
+        alert = "Unexpected error"
 
-    new_alert = IndicatorAlert(indicator=domain, message=alert)
-    new_alert.save()
-
-    return []
+    return alert
 
 
 def lookup_domain_whois(domain):

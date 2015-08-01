@@ -87,7 +87,7 @@
                     {% endif %}
                 {% endfor %}
             </td>
-        {% elif current_whois.info.ip_address %}
+        {% elif current_whois.info.query %}
             <td>
                 <b>Lookup Date:</b> {{ current_whois.info_date }}<br>
                 <b>IP Address:</b> {{ current_whois.info.query }}<br>
