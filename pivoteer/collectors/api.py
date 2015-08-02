@@ -45,30 +45,32 @@ class PassiveTotal(object):
 
     def retrieve_data(self, query, resource):
 
-        try:
-            api_call = self.GET_resources[resource]
-            url = self.base_url + self.api_version + api_call
-            params = {"api_key": self.__key, "query": query}
-            response = requests.get(url, params=params)
-            json_response = json.loads(response.content)
-            return json_response
+        if self.__key:
+            try:
+                api_call = self.GET_resources[resource]
+                url = self.base_url + self.api_version + api_call
+                params = {"api_key": self.__key, "query": query}
+                response = requests.get(url, params=params)
+                json_response = json.loads(response.content)
+                return json_response
 
-        except KeyError:
-            logging.warning("Unrecognized API resource or malformed query")
+            except KeyError:
+                logging.warning("Unrecognized API resource or malformed query")
 
-        return None
+        return []
 
     def submit_data(self, query, resource):
 
-        try:
-            api_call = self.POST_resources[resource]
-            url = self.base_url + self.api_version + api_call
-            params = {"api_key": self.__key, "query": query}
-            response = requests.post(url, params=params)
-            json_response = json.loads(response.content)
-            return json_response
+        if self.__key:
+            try:
+                api_call = self.POST_resources[resource]
+                url = self.base_url + self.api_version + api_call
+                params = {"api_key": self.__key, "query": query}
+                response = requests.post(url, params=params)
+                json_response = json.loads(response.content)
+                return json_response
 
-        except KeyError:
-            logging.warning("Unrecognized API resource or malformed query")
+            except KeyError:
+                logging.warning("Unrecognized API resource or malformed query")
 
-        return None
+        return []
