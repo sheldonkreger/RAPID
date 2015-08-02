@@ -1,5 +1,6 @@
 import csv
 
+import datetime
 from django.views.generic import TemplateView, ListView, FormView, View
 from django.shortcuts import get_object_or_404, render
 from django.http import HttpResponse
@@ -61,7 +62,9 @@ class AlertList(LoginRequiredMixin, ListView):
     template_name = 'monitors/alerts.html'
 
     def get_queryset(self):
-        alerts = IndicatorAlert.objects.filter(recipient=self.request.user)
+        time_frame = datetime.datetime.utcnow() + datetime.timedelta(days=-7)
+        alerts = IndicatorAlert.objects.filter(recipient=self.request.user,
+                                               created__gte=time_frame)
         return alerts
 
 
