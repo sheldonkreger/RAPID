@@ -78,10 +78,10 @@ class IndicatorManager(models.Manager):
         if check_domain_valid(indicator):
             indicator = get_base_domain(indicator)
 
-        record = self.get_queryset().filter(Q(record_type=record_type),
+        records = self.get_queryset().filter(Q(record_type=record_type),
                                             Q(info__at_query__endswith=indicator) |
-                                            Q(info__at_domain_name__endswith=indicator))
-        return record
+                                            Q(info__at_domain_name__endswith=indicator)).values('info', 'info_date')
+        return records
 
     def recent_whois(self, indicator):
         record_type = 'WR'
@@ -93,7 +93,7 @@ class IndicatorManager(models.Manager):
         record = self.get_queryset().filter(Q(record_type=record_type),
                                             Q(info_date__gte=time_frame),
                                             Q(info__at_query__endswith=indicator) |
-                                            Q(info__at_domain_name__endswith=indicator))
+                                            Q(info__at_domain_name__endswith=indicator)).values('info', 'info_date')
 
         if record:
             return record.latest('info_date')

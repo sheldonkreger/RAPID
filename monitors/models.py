@@ -1,6 +1,6 @@
 from django.db import models
 from django.conf import settings
-from djorm_pgarray.fields import TextArrayField
+from django.contrib.postgres.fields import ArrayField
 
 
 class IndicatorLookupBase(models.Model):
@@ -12,7 +12,7 @@ class IndicatorLookupBase(models.Model):
     modified = models.DateTimeField(auto_now=True)
     lookup_interval = models.IntegerField()
     next_lookup = models.DateTimeField()
-    last_hosts = TextArrayField(blank=True, null=True)
+    last_hosts = ArrayField(models.CharField(max_length=254), blank=True, null=True)
     tags = models.ManyToManyField('IndicatorTag', blank=True)
 
     class Meta:

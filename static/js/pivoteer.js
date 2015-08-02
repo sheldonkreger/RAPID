@@ -51,6 +51,7 @@ function send_ajax(form_data, record){
             success: function (task){
                 if (task.errors) {
                     $( record_element ).html(task.errors.indicator);
+                    $('a[href='+record_element+']').find("span").attr("class", "glyphicon glyphicon-exclamation-sign");
                 } else {
                     poll_ajax(task.id, record_element);
                 }
@@ -198,4 +199,16 @@ $('#content').on('click', '.pivot', function( event ){
 // Manipulate displayed elements upon initial page load
 $( document ).ready(function() {
     $("#pivot_navigator").hide();
+});
+
+$("#export").on( "click", "a", function(event) {
+    // Capture link event
+    event.preventDefault();
+
+    // Grab reference to link within event context
+    var link = $(this);
+    var linkURL = link.attr("href");
+    var current_pivot = $("#pivot_navigator").find("li").last().find("span").text();
+    var fullURL = linkURL + "?indicator=" + current_pivot;
+    window.open(fullURL);
 });

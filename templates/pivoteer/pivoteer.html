@@ -68,16 +68,16 @@
         </li>
 
         <li class="pull-right">
-            <div class="btn-group dropdown">
+            <div class="btn-group dropdown" id="export">
               <button class="btn btn-primary btn-md dropdown-toggle" type="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">
                   Export
                   <span class="glyphicon glyphicon-save" aria-hidden="true"></span>
               </button>
               <ul class="dropdown-menu" aria-labelledby="dropdownMenu1">
-                <li><a href="{% url 'export_indicators' %}">All Records</a></li>
-                <li><a href="{% url 'export_indicators' %}?filter=ip">Recent Records</a></li>
-                <li><a href="{% url 'export_indicators' %}?filter=domain">Historical Records</a></li>
-                <li><a href="{% url 'export_indicators' %}?filter=domain">Malware Records</a></li>
+                <li><a href="{% url 'Pivoteer_Export' %}">All Records</a></li>
+                <li><a href="{% url 'Pivoteer_Export' %}?filter=recent">Recent Records</a></li>
+                <li><a href="{% url 'Pivoteer_Export' %}?filter=historical">Historical Records</a></li>
+                <li><a href="{% url 'Pivoteer_Export' %}?filter=malware">Malware Records</a></li>
               </ul>
             </div>
         </li>

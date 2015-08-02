@@ -36,7 +36,7 @@ def geolocate_ip(ip):
     except Exception as unexpected_error:
         logger.error("Unexpected error %s" % unexpected_error)
 
-    return {}
+    return OrderedDict({"city": "", "province": "", "country": ""})
 
 
 def resolve_domain(domain):

@@ -139,22 +139,22 @@ class ExportRecords(LoginRequiredMixin, View):
         self.response['Content-Disposition'] = 'attachment; filename="exported_records.csv"'
         self.writer = csv.writer(self.response)
 
-    def post(self, request):
-        indicator = request.POST['indicator']
-        export = request.POST['export']
+    def get(self, request):
+        indicator = request.GET.get('indicator', '')
+        filtering = request.GET.get('filter', '')
 
-        if indicator and export == 'all':
+        if indicator and filtering == '':
             self.export_recent(indicator)
             self.export_historical(indicator, request)
-            self.export_malware(indicator, request)
+            self.export_malware(indicator)
 
-        elif indicator and export == 'recent':
+        elif indicator and filtering == 'recent':
             self.export_recent(indicator)
 
-        elif indicator and export == 'historical':
+        elif indicator and filtering == 'historical':
             self.export_historical(indicator, request)
 
-        elif indicator and export == 'malware':
+        elif indicator and filtering == 'malware':
             self.export_malware(indicator)
 
         return self.response
@@ -164,56 +164,57 @@ class ExportRecords(LoginRequiredMixin, View):
         hosts = IndicatorRecord.objects.recent_hosts(indicator)
         whois = IndicatorRecord.objects.recent_whois(indicator)
 
-        for host in hosts:
-            try:
+        if hosts:
+            self.line_separator()
+            self.writer.writerow(["Date", "Source", "IP", "Domain", "IP Location"])
+
+            for host in hosts:
                 entry = [host.info_date, host.info_source,
-                         host.info['ip'], host.info['domain'],
-                         host.info['geo_location']['city'],
-                         host.info['geo_location']['province'],
-                         host.info['geo_location']['country']]
+                         host.info['ip'], host.info['domain'], host.info['geo_location']]
 
                 self.writer.writerow(entry)
 
-            except:
-                pass
-
-        self.line_separator()
-        self.writer.writerow([whois.info])
-        self.line_separator()
+        if whois:
+            self.line_separator()
+            self.writer.writerow(["Lookup Date", "WHOIS Information"])
+            self.writer.writerow([whois['info_date'], whois['info']])
 
     def export_historical(self, indicator, request):
 
         hosts = IndicatorRecord.objects.historical_hosts(indicator, request)
         whois = IndicatorRecord.objects.historical_whois(indicator)
 
-        for host in hosts:
-            try:
+        if hosts:
+            print(hosts)
+            self.line_separator()
+            self.writer.writerow(["Date", "Source", "IP", "Domain", "IP Location"])
+
+            for host in hosts:
                 entry = [host.info_date, host.info_source,
-                         host.info['ip'], host.info['domain'],
-                         host.info['geo_location']['city'],
-                         host.info['geo_location']['province'],
-                         host.info['geo_location']['country']]
+                         host.info['ip'], host.info['domain'], host.info['geo_location']]
 
                 self.writer.writerow(entry)
 
-            except:
-                pass
-
-        for record in whois:
+        if whois:
             self.line_separator()
-            self.writer.writerow([record.info])
+            self.writer.writerow(['First Seen / Last Seen', 'WHOIS Information'])
 
-        self.line_separator()
+            for record in whois:
+                self.writer.writerow([str(record['earliest']) + " / " + str(record['latest']), record['info']])
 
     def export_malware(self, indicator):
 
         malware = IndicatorRecord.objects.malware_records(indicator)
 
-        for record in malware:
-            entry = [record.info_date, record.info_source, record.info['C2'], record.info['md5'],
-                     record.info['sha1'], record.info['sha256'], record.info['link']]
+        if malware:
+            self.line_separator()
+            self.writer.writerow(["Date", "Source", "Indicator", "MD5", "SHA1", "SHA256", "Report Link"])
 
-            self.writer.writerow(entry)
+            for record in malware:
+                entry = [record.info_date, record.info_source, record.info['indicator'], record.info['md5'],
+                         record.info['sha1'], record.info['sha256'], record.info['link']]
+
+                self.writer.writerow(entry)
 
     def line_separator(self):
         self.writer.writerow([])
