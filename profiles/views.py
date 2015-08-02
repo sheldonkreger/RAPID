@@ -74,7 +74,7 @@ class EditProfile(LoginRequiredMixin, UpdateView):
     redirect_unauthenticated_users = True
 
     model = Profile
-    fields = ['email', 'alerts']
+    fields = ['alerts']
     template_name = 'profiles/update.html'
 
     def get_object(self):
