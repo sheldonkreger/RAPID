@@ -102,7 +102,7 @@ class IndicatorManager(models.Manager):
 
     def historical_whois(self, indicator):
         record_type = 'WR'
-        time_frame = datetime.datetime.utcnow() + datetime.timedelta(hours=-0)
+        time_frame = datetime.datetime.utcnow() + datetime.timedelta(hours=-24)
 
         if check_domain_valid(indicator):
             indicator = get_base_domain(indicator)
