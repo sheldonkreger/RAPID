@@ -7,7 +7,7 @@ import geoip2.database
 from ipwhois import IPWhois
 from collections import OrderedDict
 from ipwhois.ipwhois import IPDefinedError
-from monitors.models import IndicatorAlert
+
 
 logger = logging.getLogger(__name__)
 current_directory = os.path.dirname(__file__)
@@ -65,7 +65,7 @@ def resolve_domain(domain):
     except Exception:
         alert = "Unexpected error"
 
-    return alert
+    return [alert]
 
 
 def lookup_domain_whois(domain):
