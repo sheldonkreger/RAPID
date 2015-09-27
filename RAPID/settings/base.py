@@ -27,7 +27,7 @@ MEDIA_URL = "/media/"
 STATIC_URL = "/static/"
 
 # Open JSON-based secrets module
-with open("secrets.json") as f:
+with open("secrets.json", "r") as f:
     secrets = json.loads(f.read())
 
 

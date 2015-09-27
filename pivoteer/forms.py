@@ -70,7 +70,7 @@ class SubmissionForm(forms.Form):
 
         elif record_type == "Historical":
             new_task = group([passive_hosts.s(indicator, "VTO"),
-                              passive_hosts.s(indicator, "PTO"),
+                              # passive_hosts.s(indicator, "PTO"),
                               passive_hosts.s(indicator, "IID")])()
 
         elif record_type == "Malware":
