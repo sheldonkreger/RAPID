@@ -1,5 +1,5 @@
 # Names of nodes to start
-CELERYD_NODES="w1 w2"
+CELERYD_NODES="w1"
 
 # Absolute or relative path to the 'celery' command:
 CELERY_BIN="/usr/local/bin/celery"
