@@ -213,5 +213,5 @@ class IndicatorMonitoring(PeriodicTask):
             ip_lookup.save()
 
     def create_alert(self, indicator, alert_text, owner):
-        new_alert = IndicatorAlert(indicator=indicator, alert_text=alert_text, owner=owner)
+        new_alert = IndicatorAlert(indicator=indicator, message=alert_text, recipient=owner)
         new_alert.save()
