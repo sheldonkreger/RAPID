@@ -400,8 +400,8 @@ class InternetIdentityScraper(MechanizedScraper):
             for td in tr.find_all('td'):
                 tds.append(td.text.strip())
 
-            # check for querytype to correctly display output
-            if tds:
+            # check that table data exists
+            if len(tds) == 4:
                 IID_seen = tds[0]
                 IID_host = tds[1]
                 IID_qType = tds[2]
