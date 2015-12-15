@@ -363,13 +363,15 @@ class InternetIdentityScraper(MechanizedScraper):
     def scrape_data(self, indicator, query_type):
 
         passive_table = []
-        search_period = '5'
+        search_period = '6'
 
-        # 1 = Current day
-        # 2 = Current month
-        # 3 = Past 6 months
-        # 4 = Past year
-        # 5 = Full Historical
+        # 0 = Current Day
+        # 1 = Past 72 Hours
+        # 2 = Past Week
+        # 3 = Past Month
+        # 4 = Past 3 Months
+        # 5 = Past 6 Months
+        # 6 = Past Year
 
         format = '0'
         # 0 = Display results on screen
@@ -399,21 +401,14 @@ class InternetIdentityScraper(MechanizedScraper):
                 tds.append(td.text.strip())
 
             # check for querytype to correctly display output
-            if query_type == 'A' or query_type == 'X':
-                IID_ip = tds[0]
-                IID_asn = tds[1]
-                IID_bgp = tds[2]
-                IID_seen = tds[3]
-                IID_host = tds[4]
+            if tds:
+                IID_seen = tds[0]
+                IID_host = tds[1]
+                IID_qType = tds[2]
+                IID_ip = tds[3]
 
-            else:
-                IID_host = tds[0]
-                IID_seen = tds[1]
-                IID_ip = tds[2]
-                IID_asn = tds[3]
-                IID_bgp = tds[4]
+                passive_table.append({'ip': IID_ip, 'domain': IID_host, 'date': IID_seen, 'ip_location': {}})
 
-            passive_table.append({'ip': IID_ip, 'domain': IID_host, 'date': IID_seen, 'ip_location': {}})
             tds[:] = []
 
         self.results.extend(passive_table)
