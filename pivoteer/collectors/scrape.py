@@ -389,7 +389,7 @@ class InternetIdentityScraper(MechanizedScraper):
         # D = Query Domain for Authoritative Nameservers
         # N = Query Nameserver for Authoritative Domains
 
-        url = "https://research.iad.internetidentity.com/index.php?search_period=" + search_period + "&format=" + format + "&queryType=" + query_type + "&target=" + indicator + "&submit=Submit+Query"
+        url = "https://research.iad.internetidentity.com/index.php?period=" + search_period + "&format=" + format + "&queryType=" + query_type + "&target=" + indicator + "&submit=Submit+Query"
 
         self.browser.open(url)
         parser = self.browser.parsed
