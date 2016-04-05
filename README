@@ -47,12 +47,11 @@ General Instructions
 6) Instantiate and sync your Django models
      -- python3 manage.py syncdb
 
-7) Setup celery worker daemons
-     -- Scripts located at: /external_configs/celery/
-     -- Instructions located at: /docs/CELERY
+7) Start celery worker daemons
+     -- service celery_beat start
+     -- service celery_daemon start
+     -- service celery_pivoteer start
+     -- Additional info located at: /docs/CELERY
 
-8) Retrieve and decompress Geo Lite database file and place in /RAPID/core/
-     -- wget "http://geolite.maxmind.com/download/geoip/database/GeoLite2-City.mmdb.gz"
-     -- gunzip GeoLite2-City.mmdb.gz
-
-9) Run python3 manage.py collectstatic
+8) If you figured out the correct apache configs, run `python3 manage.py collectstatic`
+Otherwise, to run the django server in local dev mode, run `python3 manage.py runserver`
