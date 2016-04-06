@@ -55,7 +55,7 @@ General Instructions
 
 8) If you figured out the correct apache configs, run `python3 manage.py collectstatic`
 Otherwise, to run the django server in local dev mode, run `python3 manage.py runserver`
-in order to to run locally, update the manage.py file:
+in order to run locally, update the manage.py file:
 
     -- change 'os.environ.setdefault("DJANGO_SETTINGS_MODULE", "RAPID.settings.production")' to
         'os.environ.setdefault("DJANGO_SETTINGS_MODULE", "RAPID.settings.local")'
