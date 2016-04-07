@@ -11,7 +11,7 @@ function kill_ajax() {
 // Submit for all records
 function run_records(form_data) {
 
-    var records = [ "Recent", "Historical", "Malware"];
+    var records = [ "Recent", "Historical", "Malware", "SafeSearch"];
 
     $.each(records, function( index, record ) {
         // Clear out old information from DOM elements and submit new ajax requests
@@ -123,11 +123,17 @@ function initialize_table(record_element) {
 
     } else if (record_element == "#MalwarePanel") {
         $('#MR_table').dataTable({
-            "iDisplayLength":  50,
-            "info":            false,
-            "bLengthChange":   false
+            "iDisplayLength": 50,
+            "info": false,
+            "bLengthChange": false
         });
 
+    } else if (record_element == "#SafeSearchPanel") {
+        $('#SS_table').dataTable({
+            "iDisplayLength": 50,
+            "info": false,
+            "bLengthChange": false
+        });
     }
 }
 

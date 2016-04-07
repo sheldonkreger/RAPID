@@ -1,0 +1,33 @@
+<h3>FOOBAR</h3>
+{#{% if malware_records %}#}
+    <table id="SS_table" class="table display">
+        <thead>
+          <tr>
+            <th>FOOBAR</th>
+          </tr>
+        </thead>
+
+        <tbody>
+        <tr>
+            <td>FOOBAR</td>
+        </tr>
+{#            {% for record in malware_records %}#}
+{#                <tr>#}
+{#                    <td>{{ record.info_date }}</td>#}
+{#                    <td>#}
+{#                        {% if record.info.md5 %}#}
+{#                            <a href="{{ record.info.link }}" target="_blank">{{ record.info.md5 }}</a>#}
+{#                        {% elif record.info.sha1 %}#}
+{#                            <a href="{{ record.info.link }}" target="_blank">{{ record.info.sha1 }}</a>#}
+{#                        {% elif record.info.sha256 %}#}
+{#                            <a href="{{ record.info.link }}" target="_blank">{{ record.info.sha256 }}</a>#}
+{#                        {% endif %}#}
+{#                    </td>#}
+{#                    <td>{{ record.get_info_source_display }}</td>#}
+{#                </tr>#}
+{#            {% endfor %}#}
+        </tbody>
+    </table>
+{#{% else %}#}
+{#    <h4>No Samples Found</h4>#}
+{#{% endif %}#}

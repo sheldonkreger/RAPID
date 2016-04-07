@@ -128,6 +128,13 @@ class IndicatorManager(models.Manager):
 
         return unique_records
 
+    def safesearch_record(self, indicator):
+        record_type = 'SS'
+        time_frame = datetime.datetime.utcnow() + datetime.timedelta(hours=-24)
+        records = 'foobar'
+        return records
+
+
 
 class IndicatorRecord(models.Model):
 
@@ -135,6 +142,7 @@ class IndicatorRecord(models.Model):
         ('HR', 'Host Record'),
         ('MR', 'Malware Record'),
         ('WR', 'Whois Record'),
+        ('SS', "SafeSearch Record"),
     )
 
     source_choices = (
@@ -145,6 +153,7 @@ class IndicatorRecord(models.Model):
         ('DNS', 'DNS Query'),
         ('REX', 'Robtex'),
         ('WIS', 'WHOIS'),
+        ('GOO', "Google"),
     )
 
     record_type = models.CharField(max_length=2, choices=record_choices)

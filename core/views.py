@@ -3,7 +3,8 @@ from django.core.urlresolvers import reverse
 from django.shortcuts import render, redirect
 from django.utils.decorators import method_decorator
 from django.contrib.auth.decorators import login_required
-
+from django.http import HttpResponse
+from core.lookups import lookup_google_safe_browsing
 
 class HomePage(View):  # RedirectView
 
@@ -19,3 +20,8 @@ class PrimaryNavigation(View):  # TemplateView
     def get(self, request):
 
         return render(request, self.template_name)
+
+
+def google(request, url):
+    response = lookup_google_safe_browsing(url)
+    return HttpResponse("hit google lookup with url: " + url)

@@ -123,7 +123,15 @@ class CheckTask(LoginRequiredMixin, View):
             malware_records = IndicatorRecord.objects.malware_records(indicator)
             self.template_vars["malware_records"] = malware_records
 
-        self.template_vars["origin"] = indicator
+        elif record_type == "SafeSearch":
+
+            safesearch_records = IndicatorRecord.objects.safesearch_record()
+            self.template_name = "pivoteer/SafeSearch.html"
+
+            # safesearch_records = IndicatorRecord.objects.safesearch_records(indicator)
+            # self.template_vars["safesearch_records"] = safesearch_records
+
+            self.template_vars["origin"] = indicator
         return render(request, self.template_name, self.template_vars)
 
 
@@ -156,6 +164,9 @@ class ExportRecords(LoginRequiredMixin, View):
 
         elif indicator and filtering == 'malware':
             self.export_malware(indicator)
+
+        # elif indicator and filtering == 'safesearch':
+        #     self.export_safesearch(indicator)
 
         return self.response
 

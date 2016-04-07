@@ -4,7 +4,7 @@ import datetime
 from collections import OrderedDict
 from django.conf import settings
 from RAPID.celery import app
-from core.lookups import lookup_ip_whois, lookup_domain_whois, resolve_domain, geolocate_ip
+from core.lookups import lookup_ip_whois, lookup_domain_whois, resolve_domain, geolocate_ip, lookup_google_safe_browsing
 from pivoteer.collectors.scrape import RobtexScraper, InternetIdentityScraper
 from pivoteer.collectors.scrape import VirusTotalScraper, ThreatExpertScraper
 from pivoteer.collectors.api import PassiveTotal
@@ -159,3 +159,17 @@ def malware_samples(self, indicator, source):
             record_entry.save()
         except Exception as e:
             print(e)
+
+@app.task(bind=True)
+def google_safesearch(self, indicator):
+    current_time = datetime.datetime.utcnow()
+    safesearch_status = lookup_google_safe_browsing(indicator)
+    try:
+        record_entry = IndicatorRecord(record_type="SS",
+                                       info_source='GOO',
+                                       info_date=current_time,
+                                       info=OrderedDict({"status": safesearch_status,
+                                                         "foo2": "bar2"}))
+        record_entry.save()
+    except Exception as e:
+        print(e)
