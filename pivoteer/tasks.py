@@ -4,7 +4,7 @@ import datetime
 from collections import OrderedDict
 from django.conf import settings
 from RAPID.celery import app
-from core.lookups import lookup_ip_whois, lookup_domain_whois, resolve_domain, geolocate_ip, lookup_ip_censys_https, lookup_google_safe_browsing
+from core.lookups import lookup_ip_whois, lookup_domain_whois, resolve_domain, geolocate_ip, lookup_google_safe_browsing, lookup_ip_censys_https
 from pivoteer.collectors.scrape import RobtexScraper, InternetIdentityScraper
 from pivoteer.collectors.scrape import VirusTotalScraper, ThreatExpertScraper
 from pivoteer.collectors.api import PassiveTotal
