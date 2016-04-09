@@ -9,6 +9,7 @@
             <th>Domain</th>
             <th>IP Address</th>
             <th>Source</th>
+            <th>SSL</th>
           </tr>
         </thead>
         <tbody>
@@ -30,6 +31,14 @@
                         {% endif %}
                     </td>
                     <td>{{ record.get_info_source_display }}</td>
+                    <td>
+                        {% if record.info.https_cert != None %}
+                            Subject: {{ record.info.https_cert.subject_dn }}<br />
+                            Issuer: {{ record.info.https_cert.issuer_dn }}<br />
+                            SHA-256: {{ record.info.https_cert.fingerprint_sha256 }}<br />
+                            Alt. Names: {{ record.info.https_cert.extensions.subject_alt_name.dns_names }}
+                        {% endif %}
+                    </td>
                 </tr>
             {% endfor %}
         </tbody>

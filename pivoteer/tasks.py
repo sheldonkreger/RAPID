@@ -4,7 +4,7 @@ import datetime
 from collections import OrderedDict
 from django.conf import settings
 from RAPID.celery import app
-from core.lookups import lookup_ip_whois, lookup_domain_whois, resolve_domain, geolocate_ip
+from core.lookups import lookup_ip_whois, lookup_domain_whois, resolve_domain, geolocate_ip, lookup_ip_censys_https
 from pivoteer.collectors.scrape import RobtexScraper, InternetIdentityScraper
 from pivoteer.collectors.scrape import VirusTotalScraper, ThreatExpertScraper
 from pivoteer.collectors.api import PassiveTotal
@@ -13,7 +13,6 @@ from .models import IndicatorRecord
 
 @app.task(bind=True)
 def domain_whois(self, domain):
-
     current_time = datetime.datetime.utcnow()
     record = lookup_domain_whois(domain)
 
@@ -63,17 +62,20 @@ def domain_hosts(self, domain):
 
     current_time = datetime.datetime.utcnow()
     hosts = resolve_domain(domain)
+    print("domain hosts retrieved ....." + ', '.join(hosts))
 
     if type(hosts) == list:
         for host in hosts:
 
             ip_location = geolocate_ip(host)
+            https_cert = lookup_ip_censys_https(host)
 
             try:
                 record_entry = IndicatorRecord(record_type="HR",
                                                info_source="DNS",
                                                info_date=current_time,
                                                info=OrderedDict({"geo_location": ip_location,
+                                                                 "https_cert": https_cert,
                                                                  "ip": host, "domain": domain}))
                 record_entry.save()
             except Exception as e:
@@ -99,7 +101,6 @@ def ip_hosts(self, ip_address):
                 record_entry.save()
             except Exception as e:
                 print(e)
-
 
 @app.task(bind=True)
 def passive_hosts(self, indicator, source):
