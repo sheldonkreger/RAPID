@@ -8,6 +8,7 @@ import urllib.request
 from ipwhois import IPWhois
 from collections import OrderedDict
 from ipwhois.ipwhois import IPDefinedError
+from censys.ipv4 import CensysIPv4
 
 
 logger = logging.getLogger(__name__)
@@ -110,10 +111,17 @@ def lookup_ip_whois(ip):
 
     return None
 
-
 def lookup_google_safe_browsing(domain):
     url = "https://sb-ssl.google.com/safebrowsing/api/lookup?client=rapid-dev&key=AIzaSyDtkkL0PIOrm86_Z8Q9Te14w-rOQF8Buko&appver=1.5.2&pver=3.1&url=" + domain
     response = urllib.request.urlopen(url)
     return response.status
 
     # https://sb-ssl.google.com/safebrowsing/api/lookup?client=rapid-dev&key=AIzaSyDtkkL0PIOrm86_Z8Q9Te14w-rOQF8Buko&appver=1.5.2&pver=3.1&url=sheldonkreger.com
+
+# TODO put API key in secrets.json
+def lookup_ip_censys_https(ip):
+    ip_data = CensysIPv4(api_id="5274c40f-ea0f-4132-8f9f-9b67a81233b1", api_secret="QyHhlHVdZrwO4pYr0fEdNFxpbiQfqSNo").view(ip)
+    try:
+        return ip_data['443']['https']['tls']['certificate']['parsed']
+    except KeyError:
+        return None
