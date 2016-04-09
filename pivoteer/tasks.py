@@ -62,7 +62,6 @@ def domain_hosts(self, domain):
 
     current_time = datetime.datetime.utcnow()
     hosts = resolve_domain(domain)
-    print("domain hosts retrieved ....." + ', '.join(hosts))
 
     if type(hosts) == list:
         for host in hosts:

@@ -9,6 +9,7 @@ from ipwhois import IPWhois
 from collections import OrderedDict
 from ipwhois.ipwhois import IPDefinedError
 from censys.ipv4 import CensysIPv4
+from django.conf import settings
 
 
 logger = logging.getLogger(__name__)
@@ -120,7 +121,9 @@ def lookup_google_safe_browsing(domain):
 
 # TODO put API key in secrets.json
 def lookup_ip_censys_https(ip):
-    ip_data = CensysIPv4(api_id="5274c40f-ea0f-4132-8f9f-9b67a81233b1", api_secret="QyHhlHVdZrwO4pYr0fEdNFxpbiQfqSNo").view(ip)
+    api_id = settings.CENSYS_API_ID
+    api_secret = settings.CENSYS_API_SECRET
+    ip_data = CensysIPv4(api_id=api_id, api_secret=api_secret).view(ip)
     try:
         return ip_data['443']['https']['tls']['certificate']['parsed']
     except KeyError:
