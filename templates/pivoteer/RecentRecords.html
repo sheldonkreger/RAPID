@@ -35,7 +35,11 @@
                         {% if record.info.https_cert != None %}
                             Subject: {{ record.info.https_cert.subject_dn }}<br />
                             Issuer: {{ record.info.https_cert.issuer_dn }}<br />
-                            SHA-256: {{ record.info.https_cert.fingerprint_sha256 }}<br />
+                            SHA-256:
+                            <a target="_blank" href="https://www.censys.io/ipv4?q=443.https.tls.certificate.parsed.fingerprint_sha256:{{ record.info.https_cert.fingerprint_sha256 }}">
+                                {{ record.info.https_cert.fingerprint_sha256 }}
+                                <span class="glyphicon glyphicon-new-window"></span>
+                            </a><br />
                             Alt. Names: {{ record.info.https_cert.extensions.subject_alt_name.dns_names }}
                         {% endif %}
                     </td>

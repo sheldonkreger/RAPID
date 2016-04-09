@@ -89,6 +89,7 @@ def ip_hosts(self, ip_address):
     scraper = RobtexScraper()
     hosts = scraper.run(ip_address)
     ip_location = geolocate_ip(ip_address)
+    https_cert = lookup_ip_censys_https(ip_address)
 
     if type(hosts) == list:
         for host in hosts:
@@ -97,6 +98,7 @@ def ip_hosts(self, ip_address):
                                                info_source="REX",
                                                info_date=current_time,
                                                info=OrderedDict({"geo_location": ip_location,
+                                                                 "https_cert": https_cert,
                                                                  "ip": ip_address, "domain": host}))
                 record_entry.save()
             except Exception as e:
