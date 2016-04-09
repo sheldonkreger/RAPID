@@ -52,6 +52,8 @@ AUTH_USER_MODEL = 'profiles.Profile'
 IID_USER = retrieve_secret_configuration("IID_USER")
 IID_PASS = retrieve_secret_configuration("IID_PASS")
 PASSIVE_TOTAL_API = retrieve_secret_configuration("PASSIVE_TOTAL_API")
+CENSYS_API_ID = retrieve_secret_configuration("CENSYS_API_ID")
+CENSYS_API_SECRET = retrieve_secret_configuration("CENSYS_API_SECRET")
 
 # Database setting variables
 SQL_NAME = retrieve_secret_configuration("SQL_NAME")
