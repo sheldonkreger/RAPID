@@ -41,7 +41,9 @@ General Instructions
        "EMAIL_PORT": "<EMAIL_PORT>",
        "IID_USER": "<INTERNET_IDENTITY_USERNAME>",
        "IID_PASS": "<INTERNET_IDENTITY_PASSWORD>",
-       "PASSIVE_TOTAL_API": "<PASSIVE_TOTAL_API_KEY>"
+       "PASSIVE_TOTAL_API": "<PASSIVE_TOTAL_API_KEY>",
+       "CENSYS_API_ID": "<CENSYS_API_ID>",
+       "CENSYS_API_SECRET": "<CENSYS_API_SECRET>"
      }
 
 6) Instantiate and sync your Django models
@@ -55,7 +57,7 @@ General Instructions
 
 8) If you figured out the correct apache configs, run `python3 manage.py collectstatic`
 Otherwise, to run the django server in local dev mode, run `python3 manage.py runserver`
-in order to run locally, update the manage.py file:
+in order to run locally, update manage.py and RAPID/celery.py:
 
     -- change 'os.environ.setdefault("DJANGO_SETTINGS_MODULE", "RAPID.settings.production")' to
         'os.environ.setdefault("DJANGO_SETTINGS_MODULE", "RAPID.settings.local")'
