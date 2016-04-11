@@ -32,7 +32,10 @@
                     </td>
                     <td>{{ record.get_info_source_display }}</td>
                     <td>
-                        {% if record.info.https_cert != None %}
+
+                        {% if 'status' in record.info.https_cert %}
+                            {{ record.info.https_cert.message }}
+                        {% else %}
                             Subject: {{ record.info.https_cert.subject_dn }}<br />
                             Issuer: {{ record.info.https_cert.issuer_dn }}<br />
                             SHA-256:
