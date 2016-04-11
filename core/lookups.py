@@ -8,6 +8,7 @@ from ipwhois import IPWhois
 from collections import OrderedDict
 from ipwhois.ipwhois import IPDefinedError
 from censys.ipv4 import CensysIPv4
+from censys.base import CensysException
 from django.conf import settings
 
 
@@ -114,8 +115,11 @@ def lookup_ip_whois(ip):
 def lookup_ip_censys_https(ip):
     api_id = settings.CENSYS_API_ID
     api_secret = settings.CENSYS_API_SECRET
-    ip_data = CensysIPv4(api_id=api_id, api_secret=api_secret).view(ip)
+
     try:
+        ip_data = CensysIPv4(api_id=api_id, api_secret=api_secret).view(ip)
         return ip_data['443']['https']['tls']['certificate']['parsed']
     except KeyError:
-        return None
+        return {'status':404,'message':"No HTTPS certificate data was found for IP " + ip}
+    except CensysException as ce:
+        return {'status':ce.status_code,'message':ce.message}
