@@ -1,5 +1,4 @@
 import requests, json, logging
-from celery.bin.celery import result
 
 # Queries the ThreadCrowd API for information on domains and IPs
 class ThreatCrowd(object):
