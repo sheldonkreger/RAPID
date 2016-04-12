@@ -136,26 +136,38 @@
   <b>Lookup Date:</b><br>
   {{ tc_info.info_date }}
   <br><br>
+  {% if tc_info.info.permalink %}
   <b>Permalink:</b><br>
   <a href="{{ tc_info.info.permalink }}">{{ tc_info.info.permalink }}</a>
   <br><br>
+  {% endif %}
+  {% if tc_info.info.emails %}
   <b>Emails:</b><br>
   {{ tc_info.info.emails|join:", " }}
   <br><br>
+  {% endif %}
+  {% if tc_info.info.subdomains %}
   <b>Subdomains:</b><br>
   {{ tc_info.info.subdomains|join:", " }}
   <br><br>
+  {% endif %}
+  {% if tc_info.info.hashes %}
   <b>Hashes:</b><br>
   {{ tc_info.info.hashes|join:", " }}
   <br><br>
+  {% endif %}
+  {% if tc_info.info.resolutions %}
   <b>Resolutions:</b><br>
-  {% for item in tc_info.info.resolutions %}
-    {{ item.ip_address }} {{ item.last_resolved }}, 
-  {% endfor %}
+    {% for item in tc_info.info.resolutions %}
+      {% if item.domain %}{{ item.domain }}{% endif %}{% if item.ip_address %}{{ item.ip_address }}{% endif %} {{ item.last_resolved }}, 
+    {% endfor %}
   <br><br>
+  {% endif %}
+  {% if tc_info.info.references %}
   <b>References:</b><br>
   {{ tc_info.info.references|join:", " }}
   <br><br>
+  {% endif %}
 {% else %}
 <h4>No Records Found</h4>
 {% endif %}
