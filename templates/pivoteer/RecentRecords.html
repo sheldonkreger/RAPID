@@ -43,6 +43,7 @@
                                 {{ record.info.https_cert.fingerprint_sha256 }}
                                 <span class="glyphicon glyphicon-new-window"></span>
                             </a><br />
+                            Validity: {{ record.info.https_cert.validity }}<br />
                             Alt. Names: {{ record.info.https_cert.extensions.subject_alt_name.dns_names }}
                         {% endif %}
                     </td>
