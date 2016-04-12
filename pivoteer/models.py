@@ -131,6 +131,10 @@ class IndicatorManager(models.Manager):
     def safesearch_record(self, indicator):
         record_type = 'SS'
         time_frame = datetime.datetime.utcnow() + datetime.timedelta(hours=-24)
+        # if check_domain_valid(indicator):
+        #     raw_records = self.get_queryset().filter(Q(record_type=record_type),
+        #                                              Q(info_date__lt=time_frame),
+        #                                              Q(info__at_uery))
         records = 'foobar'
         return records
 
@@ -153,7 +157,7 @@ class IndicatorRecord(models.Model):
         ('DNS', 'DNS Query'),
         ('REX', 'Robtex'),
         ('WIS', 'WHOIS'),
-        ('GOO', "Google"),
+        ('GSS', "Google Safe Search"),
     )
 
     record_type = models.CharField(max_length=2, choices=record_choices)

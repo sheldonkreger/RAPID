@@ -125,13 +125,13 @@ class CheckTask(LoginRequiredMixin, View):
 
         elif record_type == "SafeSearch":
 
-            safesearch_records = IndicatorRecord.objects.safesearch_record()
+            safesearch_records = IndicatorRecord.objects.safesearch_record(indicator)
             self.template_name = "pivoteer/SafeSearch.html"
 
             # safesearch_records = IndicatorRecord.objects.safesearch_records(indicator)
             # self.template_vars["safesearch_records"] = safesearch_records
 
-            self.template_vars["origin"] = indicator
+            self.template_vars["foo_var"] = safesearch_records
         return render(request, self.template_name, self.template_vars)
 
 

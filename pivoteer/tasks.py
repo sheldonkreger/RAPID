@@ -168,10 +168,10 @@ def google_safesearch(self, indicator):
     safesearch_status = lookup_google_safe_browsing(indicator)
     try:
         record_entry = IndicatorRecord(record_type="SS",
-                                       info_source='GOO',
+                                       info_source='GSS',
                                        info_date=current_time,
-                                       info=OrderedDict({"status": safesearch_status,
-                                                         "foo2": "bar2"}))
+                                       # We store the status code that the Google SafeSearch API returns.
+                                       info=OrderedDict({"statusCode": safesearch_status}))
         record_entry.save()
     except Exception as e:
         print(e)

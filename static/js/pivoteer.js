@@ -11,7 +11,7 @@ function kill_ajax() {
 // Submit for all records
 function run_records(form_data) {
 
-    var records = [ "Recent", "Historical", "Malware", "SafeSearch"];
+    var records = [ "Recent", "Historical", "Malware",  "SafeSearch"];
 
     $.each(records, function( index, record ) {
         // Clear out old information from DOM elements and submit new ajax requests
