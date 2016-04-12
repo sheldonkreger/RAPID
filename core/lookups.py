@@ -10,14 +10,13 @@ from ipwhois.ipwhois import IPDefinedError
 from censys.ipv4 import CensysIPv4
 from censys.base import CensysException
 from django.conf import settings
-
+from .totalhash import TotalHashApi
 
 logger = logging.getLogger(__name__)
 current_directory = os.path.dirname(__file__)
 
 
 def geolocate_ip(ip):
-
     geolocation_database = os.path.join(current_directory, 'GeoLite2-City.mmdb')
     reader = geoip2.database.Reader(geolocation_database)
 
@@ -43,7 +42,6 @@ def geolocate_ip(ip):
 
 
 def resolve_domain(domain):
-
     # Set resolver to Google openDNS servers
     resolver = dns.resolver.Resolver()
     resolver.nameservers = ['8.8.8.8', '8.8.4.4']
@@ -72,7 +70,6 @@ def resolve_domain(domain):
 
 
 def lookup_domain_whois(domain):
-
     # Extract base domain name for lookup
     ext = tldextract.extract(domain)
     delimiter = "."
@@ -93,7 +90,6 @@ def lookup_domain_whois(domain):
 
 
 def lookup_ip_whois(ip):
-
     try:
         # Retrieve parsed record
         record = IPWhois(ip).lookup()
@@ -112,6 +108,7 @@ def lookup_ip_whois(ip):
 
     return None
 
+
 def lookup_ip_censys_https(ip):
     api_id = settings.CENSYS_API_ID
     api_secret = settings.CENSYS_API_SECRET
@@ -120,6 +117,19 @@ def lookup_ip_censys_https(ip):
         ip_data = CensysIPv4(api_id=api_id, api_secret=api_secret).view(ip)
         return ip_data['443']['https']['tls']['certificate']['parsed']
     except KeyError:
-        return {'status':404,'message':"No HTTPS certificate data was found for IP " + ip}
+        return {'status': 404, 'message': "No HTTPS certificate data was found for IP " + ip}
     except CensysException as ce:
-        return {'status':ce.status_code,'message':ce.message}
+        return {'status': ce.status_code, 'message': ce.message}
+
+
+def lookup_ip_total_hash(ip):
+    logger.debug('***** in lookup_ip_total_hash')
+    api_id = settings.TOTAL_HASH_API_ID
+    api_secret = settings.TOTAL_HASH_SECRET
+    try:
+        th = TotalHashApi(user=api_id, key=api_secret)
+        query = "ip:" + ip
+        res = th.do_search(query)
+        return th.json_response(res)
+    except Exception as e:
+        return {'message': "No result data was found for TotalHash " + e.message}

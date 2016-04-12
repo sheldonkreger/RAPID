@@ -1,14 +1,18 @@
 from __future__ import absolute_import
 
 import datetime
+import logging
 from collections import OrderedDict
 from django.conf import settings
 from RAPID.celery import app
-from core.lookups import lookup_ip_whois, lookup_domain_whois, resolve_domain, geolocate_ip, lookup_ip_censys_https
+from core.lookups import lookup_ip_whois, lookup_domain_whois, resolve_domain, geolocate_ip, lookup_ip_censys_https, \
+    lookup_ip_total_hash
 from pivoteer.collectors.scrape import RobtexScraper, InternetIdentityScraper
 from pivoteer.collectors.scrape import VirusTotalScraper, ThreatExpertScraper
 from pivoteer.collectors.api import PassiveTotal
 from .models import IndicatorRecord
+
+logger = logging.getLogger(__name__)
 
 
 @app.task(bind=True)
@@ -35,7 +39,6 @@ def domain_whois(self, domain):
 
 @app.task(bind=True)
 def ip_whois(self, ip_address):
-
     current_time = datetime.datetime.utcnow()
     record = lookup_ip_whois(ip_address)
 
@@ -59,7 +62,6 @@ def ip_whois(self, ip_address):
 
 @app.task(bind=True)
 def domain_hosts(self, domain):
-
     current_time = datetime.datetime.utcnow()
     hosts = resolve_domain(domain)
 
@@ -83,7 +85,6 @@ def domain_hosts(self, domain):
 
 @app.task(bind=True)
 def ip_hosts(self, ip_address):
-
     current_time = datetime.datetime.utcnow()
     scraper = RobtexScraper()
     hosts = scraper.run(ip_address)
@@ -103,9 +104,9 @@ def ip_hosts(self, ip_address):
             except Exception as e:
                 print(e)
 
+
 @app.task(bind=True)
 def passive_hosts(self, indicator, source):
-
     if source == "IID":
         scraper = InternetIdentityScraper()
         passive = scraper.run(indicator)  # returns table of data rows {ip, domain, date, ip_location}
@@ -136,10 +137,9 @@ def passive_hosts(self, indicator, source):
 
 @app.task(bind=True)
 def malware_samples(self, indicator, source):
-
     if source == "VTO":
         scraper = VirusTotalScraper()
-        malware = scraper.get_malware(indicator) #
+        malware = scraper.get_malware(indicator)  #
 
     elif source == "TEX":
         scraper = ThreatExpertScraper()
@@ -147,6 +147,9 @@ def malware_samples(self, indicator, source):
 
     else:
         malware = []
+
+    th_record = lookup_ip_total_hash(indicator)
+    print('MY TOTAL HASH RESULT >>>> ', th_record)
 
     for entry in malware:
         try:
@@ -157,7 +160,24 @@ def malware_samples(self, indicator, source):
                                                              "sha1": entry['sha1'],
                                                              "sha256": entry['sha256'],
                                                              "indicator": entry['C2'],
-                                                             "link": entry['link']}))
+                                                             "link": entry['link'],
+                                                             "th_record": th_record}))
+            record_entry.save()
+        except Exception as e:
+            print(e)
+
+
+@app.task(bind=True)
+def total_hash_results(self, indicator):
+    current_time = datetime.datetime.utcnow()
+    record = lookup_ip_total_hash(indicator)
+    print('MY TOTAL HASH RESULT >>>> ', record)
+
+    if record:
+        try:
+            record_entry = IndicatorRecord(record_type="TR",
+                                           info_date=current_time,
+                                           info=OrderedDict({"th_result": record}))
             record_entry.save()
         except Exception as e:
             print(e)
