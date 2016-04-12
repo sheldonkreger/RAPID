@@ -63,7 +63,10 @@ touch $APPLICATION_DIR/RAPID.log
 chmod 777 $APPLICATION_DIR/RAPID.log
 echo "Created RAPID application log"
 
-cd $APPLICATION_DIR/core/
-wget "http://geolite.maxmind.com/download/geoip/database/GeoLite2-City.mmdb.gz"
-gunzip GeoLite2-City.mmdb.gz
-echo "Downloaded and extracted Maxmind DB"
+pushd $APPLICATION_DIR/core/
+if [ ! -f "GeoLite2-City.mmdb" ]
+	wget "http://geolite.maxmind.com/download/geoip/database/GeoLite2-City.mmdb.gz"
+	gunzip GeoLite2-City.mmdb.gz
+	echo "Downloaded and extracted Maxmind DB"
+fi
+popd

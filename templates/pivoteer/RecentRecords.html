@@ -128,3 +128,33 @@
 {% else %}
     <h4>No Records Found</h4>
 {% endif %}
+
+<h3>Most Recent ThreatCrowd Record</h3>
+{% if tc_info %}
+  <br><br>
+  <b>Lookup Date:</b><br>
+  {{ tc_info.info_date }}
+  <br><br>
+  <b>Permalink:</b><br>
+  <a href="{{ tc_info.info.permalink }}">{{ tc_info.info.permalink }}</a>
+  <br><br>
+  <b>Emails:</b><br>
+  {{ tc_info.info.emails|join:", " }}
+  <br><br>
+  <b>Subdomains:</b><br>
+  {{ tc_info.info.subdomains|join:", " }}
+  <br><br>
+  <b>Hashes:</b><br>
+  {{ tc_info.info.hashes|join:", " }}
+  <br><br>
+  <b>Resolutions:</b><br>
+  {% for item in tc_info.info.resolutions %}
+    {{ item.ip_address }} {{ item.last_resolved }}, 
+  {% endfor %}
+  <br><br>
+  <b>References:</b><br>
+  {{ tc_info.info.references|join:", " }}
+  <br><br>
+{% else %}
+<h4>No Records Found</h4>
+{% endif %}

@@ -1,3 +1,5 @@
+core/GeoLite2-City.mmdb.gz
+.pydevproject
 .project
 .vagrant/
 static/
