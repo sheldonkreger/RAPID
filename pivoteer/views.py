@@ -103,6 +103,10 @@ class CheckTask(LoginRequiredMixin, View):
             # Current WHOIS record
             whois_record = IndicatorRecord.objects.recent_whois(indicator)
             self.template_vars["current_whois"] = whois_record
+            
+            # Current ThreatCrowd record
+            tc_info = IndicatorRecord.objects.recent_tc(indicator)
+            self.template_vars["tc_info"] = tc_info
 
         elif record_type == "Historical":
 

@@ -1,6 +1,7 @@
 import pickle
 import hashlib
 import datetime
+import logging
 from django.db import models
 from django.db.models import Q
 from django.db.models import Max, Min
@@ -10,12 +11,27 @@ from core.utilities import check_domain_valid, get_base_domain
 
 class IndicatorManager(models.Manager):
 
+    LOGGER = logging.getLogger(__name__)
+
     def host_records(self, indicator):
         record_type = 'HR'
 
         records = self.get_queryset().filter(Q(record_type=record_type),
                                              Q(info__at_domain__endswith=indicator) |
                                              Q(info__at_ip__endswith=indicator))
+        return records
+
+    def recent_tc(self, indicator):
+        record_type = 'TR'
+        time_frame = datetime.datetime.utcnow() + datetime.timedelta(hours=-24)
+
+        records = self.get_queryset().filter(Q(record_type=record_type),
+                                             Q(info_date__gte=time_frame),
+                                             Q(info__at_domain__endswith=indicator) |
+                                             Q(info__at_ip__endswith=indicator)).values('info', 'info_date')
+        if records:
+            return records.latest('info_date')
+        IndicatorManager.LOGGER.info("Failed to retrieve ThreatCrowd data for indicator %s" % s)
         return records
 
     def recent_hosts(self, indicator):
@@ -135,6 +151,7 @@ class IndicatorRecord(models.Model):
         ('HR', 'Host Record'),
         ('MR', 'Malware Record'),
         ('WR', 'Whois Record'),
+        ('TR', 'ThreatCrowd Record'),
     )
 
     source_choices = (
@@ -145,6 +162,7 @@ class IndicatorRecord(models.Model):
         ('DNS', 'DNS Query'),
         ('REX', 'Robtex'),
         ('WIS', 'WHOIS'),
+        ('THR', 'ThreatCrowd'),
     )
 
     record_type = models.CharField(max_length=2, choices=record_choices)
