@@ -148,9 +148,6 @@ def malware_samples(self, indicator, source):
     else:
         malware = []
 
-    th_record = lookup_ip_total_hash(indicator)
-    print('MY TOTAL HASH RESULT >>>> ', th_record)
-
     for entry in malware:
         try:
             record_entry = IndicatorRecord(record_type="MR",
@@ -160,8 +157,7 @@ def malware_samples(self, indicator, source):
                                                              "sha1": entry['sha1'],
                                                              "sha256": entry['sha256'],
                                                              "indicator": entry['C2'],
-                                                             "link": entry['link'],
-                                                             "th_record": th_record}))
+                                                             "link": entry['link']}))
             record_entry.save()
         except Exception as e:
             print(e)
@@ -170,14 +166,16 @@ def malware_samples(self, indicator, source):
 @app.task(bind=True)
 def total_hash_results(self, indicator):
     current_time = datetime.datetime.utcnow()
-    record = lookup_ip_total_hash(indicator)
-    print('MY TOTAL HASH RESULT >>>> ', record)
+    th_results = lookup_ip_total_hash(indicator)
+    print('MY TOTAL HASH RESULT >>>> ', th_results)
 
-    if record:
+    if th_results:
         try:
             record_entry = IndicatorRecord(record_type="TR",
+                                           info_source='THS',
                                            info_date=current_time,
-                                           info=OrderedDict({"th_result": record}))
+                                           info=OrderedDict({"record": th_results,
+                                                             "foo2": "bar2"}))
             record_entry.save()
         except Exception as e:
             print(e)
