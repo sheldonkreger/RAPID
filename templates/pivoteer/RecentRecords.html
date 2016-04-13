@@ -1,5 +1,7 @@
 {% load pivoteer_extras %}
 
+<span id="top"></span>
+Jump to: <br><a href="#whois">whois</a><br><a href="#threatcrowd">threatcrowd</a>
 <h3>Hosting Within Last 24 Hours</h3>
 {% if current_hosts %}
     <table id="CR_table" class="table display">
@@ -55,7 +57,8 @@
     <h4>No Records Found</h4>
 {% endif %}
 
-<h3>Most Recent WHOIS Record</h3>
+<h3 id="whois">Most Recent WHOIS Record</h3>
+<a href="#top">Back to top</a><br><br>
 {% if current_whois %}
     <table id="CW_table" class="table display">
         <thead>
@@ -130,9 +133,22 @@
     <h4>No Records Found</h4>
 {% endif %}
 
+<style>
+.linebreak { 
+    display: block;
+    margin-top: 0.5em;
+    margin-bottom: 0.5em;
+    margin-left: auto;
+    margin-right: auto;
+    border-style: inset;
+    border-width: 1px;
+}
+</style>
+
+<hr class="linebreak" id="threatcrowd">
 <h3>Most Recent ThreatCrowd Record</h3>
+<a href="#top">Back to top</a><br><br>
 {% if tc_info %}
-  <br><br>
   <b>Lookup Date:</b><br>
   {{ tc_info.info_date }}
   <br><br>
