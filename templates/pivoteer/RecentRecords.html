@@ -1,5 +1,7 @@
 {% load pivoteer_extras %}
 
+<span id="top"></span>
+Jump to: <br><a href="#whois">whois</a><br><a href="#threatcrowd">threatcrowd</a>
 <h3>Hosting Within Last 24 Hours</h3>
 {% if current_hosts %}
     <table id="CR_table" class="table display">
@@ -55,7 +57,8 @@
     <h4>No Records Found</h4>
 {% endif %}
 
-<h3>Most Recent WHOIS Record</h3>
+<h3 id="whois">Most Recent WHOIS Record</h3>
+<a href="#top">Back to top</a><br><br>
 {% if current_whois %}
     <table id="CW_table" class="table display">
         <thead>
@@ -130,9 +133,10 @@
     <h4>No Records Found</h4>
 {% endif %}
 
+<hr class="linebreak" id="threatcrowd">
 <h3>Most Recent ThreatCrowd Record</h3>
+<a href="#top">Back to top</a><br><br>
 {% if tc_info %}
-  <br><br>
   <b>Lookup Date:</b><br>
   {{ tc_info.info_date }}
   <br><br>
@@ -148,7 +152,7 @@
   {% endif %}
   {% if tc_info.info.subdomains %}
   <b>Subdomains:</b><br>
-  {{ tc_info.info.subdomains|join:", " }}
+  <span class="pivot">{{ tc_info.info.subdomains|join:"</span>, <span class=\"pivot\">" }}</span>
   <br><br>
   {% endif %}
   {% if tc_info.info.hashes %}
@@ -159,7 +163,7 @@
   {% if tc_info.info.resolutions %}
   <b>Resolutions:</b><br>
     {% for item in tc_info.info.resolutions %}
-      {% if item.domain %}{{ item.domain }}{% endif %}{% if item.ip_address %}{{ item.ip_address }}{% endif %} {{ item.last_resolved }}, 
+      {% if item.domain %}<span class="pivot">{{ item.domain }}</span>{% endif %}{% if item.ip_address %}<span class="pivot">{{ item.ip_address }}</span>{% endif %} {{ item.last_resolved }}, 
     {% endfor %}
   <br><br>
   {% endif %}

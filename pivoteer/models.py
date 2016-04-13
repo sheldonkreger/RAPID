@@ -27,8 +27,8 @@ class IndicatorManager(models.Manager):
 
         records = self.get_queryset().filter(Q(record_type=record_type),
                                              Q(info_date__gte=time_frame),
-                                             Q(info__at_domain__endswith=indicator) |
-                                             Q(info__at_ip__endswith=indicator)).values('info', 'info_date')
+                                             Q(info__at_domain__exact=indicator) |
+                                             Q(info__at_ip__exact=indicator)).values('info', 'info_date')
         if records:
             return records.latest('info_date')
         IndicatorManager.LOGGER.info("Failed to retrieve ThreatCrowd data for indicator %s" % indicator)
