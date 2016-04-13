@@ -31,7 +31,7 @@ class IndicatorManager(models.Manager):
                                              Q(info__at_ip__endswith=indicator)).values('info', 'info_date')
         if records:
             return records.latest('info_date')
-        IndicatorManager.LOGGER.info("Failed to retrieve ThreatCrowd data for indicator %s" % s)
+        IndicatorManager.LOGGER.info("Failed to retrieve ThreatCrowd data for indicator %s" % indicator)
         return records
 
     def recent_hosts(self, indicator):
