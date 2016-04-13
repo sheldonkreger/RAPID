@@ -70,7 +70,7 @@ For example the following term could be used to find poison ivy samples that do 
     av:*poison* NOT mutex:)!VoqA.I4
 """
 
-import json
+import json, logging
 import urllib.request, urllib.error, urllib.parse
 import hashlib
 import hmac
@@ -78,18 +78,19 @@ import xmltodict
 
 
 class TotalHashApi():
+    LOGGER = logging.getLogger(__name__)
+
     def __init__(self, user='', key=''):
         self.baseurl = "http://api.totalhash.com/"
         self.user = user
         self.key = key
-        print('user - ', self.user)
-        print('key - ', self.key)
 
-    def do_search(self, this_query, page_num=0):
+    def do_search(self, this_query, page_num=10):
         if page_num:
             url = self.baseurl + "search/" + this_query + "&id=%s" % self.user + "&sign=%s" % \
                                                                                  self.get_signature(this_query)
         else:
+
             url = self.baseurl + "search/" + this_query + "&id=%s" % self.user + "&sign=%s" % \
                                                                                  self.get_signature(
                                                                                      this_query) + "&start=%s" % page_num
