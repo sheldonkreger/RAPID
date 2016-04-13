@@ -76,7 +76,7 @@ class SubmissionForm(forms.Form):
         elif record_type == "Malware":
             new_task = group([malware_samples.s(indicator, "TEX"),
                               malware_samples.s(indicator, "VTO"),
-                              total_hash_results.s(indicator, "TH")])()
+                              total_hash_results.s(indicator)])()
 
         else:
             new_task = None
