@@ -167,7 +167,7 @@ def malware_samples(self, indicator, source):
 def total_hash_results(self, indicator):
     current_time = datetime.datetime.utcnow()
     th_results = lookup_ip_total_hash(indicator)
-    print('MY TOTAL HASH RESULT >>>> ', th_results)
+    logger.warn('MY TOTAL HASH RESULT >>>> ', th_results)
 
     if th_results:
         try:
