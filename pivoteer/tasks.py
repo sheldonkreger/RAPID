@@ -1,15 +1,17 @@
 from __future__ import absolute_import
 
-import datetime, logging, json
+import datetime, logging, json, ipaddress
 from collections import OrderedDict
 from django.conf import settings
 from RAPID.celery import app
-from core.lookups import lookup_ip_whois, lookup_domain_whois, resolve_domain, geolocate_ip, lookup_ip_censys_https, lookup_ip_total_hash
+from core.lookups import lookup_ip_whois, lookup_domain_whois, resolve_domain, geolocate_ip, lookup_ip_censys_https
 from core.threatcrowd import ThreatCrowd
+from core.totalhash import TotalHashApi
 from pivoteer.collectors.scrape import RobtexScraper, InternetIdentityScraper
 from pivoteer.collectors.scrape import VirusTotalScraper, ThreatExpertScraper
 from pivoteer.collectors.api import PassiveTotal
 from .models import IndicatorRecord
+
 
 # Task to look up threatcrowd domain
 @app.task(bind=True)
@@ -22,15 +24,16 @@ def domain_thc(self, domain):
     if record:
         try:
             record_entry = IndicatorRecord(record_type="TR",
-                                            info_source="THR",
-                                            info_date=current_time,
-                                            info=record)
+                                           info_source="THR",
+                                           info_date=current_time,
+                                           info=record)
             logger.info("Created TR record_entry %s" % str(record_entry))
             record_entry.save()
             logger.info("TR record saved successfully")
         except Exception as e:
             logger.warn("Error creating or saving TR record: %s" % str(e))
             print(e)
+
 
 # Task to look up threatcrowd ip
 @app.task(bind=True)
@@ -41,12 +44,13 @@ def ip_thc(self, ip):
     if record:
         try:
             record_entry = IndicatorRecord(record_type="TR",
-                                            info_source="THR",
-                                            info_date=current_time,
-                                            info=record)
+                                           info_source="THR",
+                                           info_date=current_time,
+                                           info=record)
             record_entry.save()
         except Exception as e:
             print(e)
+
 
 @app.task(bind=True)
 def domain_whois(self, domain):
@@ -72,7 +76,6 @@ def domain_whois(self, domain):
 
 @app.task(bind=True)
 def ip_whois(self, ip_address):
-
     current_time = datetime.datetime.utcnow()
     record = lookup_ip_whois(ip_address)
 
@@ -96,7 +99,6 @@ def ip_whois(self, ip_address):
 
 @app.task(bind=True)
 def domain_hosts(self, domain):
-
     current_time = datetime.datetime.utcnow()
     hosts = resolve_domain(domain)
 
@@ -120,7 +122,6 @@ def domain_hosts(self, domain):
 
 @app.task(bind=True)
 def ip_hosts(self, ip_address):
-
     current_time = datetime.datetime.utcnow()
     scraper = RobtexScraper()
     hosts = scraper.run(ip_address)
@@ -140,9 +141,9 @@ def ip_hosts(self, ip_address):
             except Exception as e:
                 print(e)
 
+
 @app.task(bind=True)
 def passive_hosts(self, indicator, source):
-
     if source == "IID":
         scraper = InternetIdentityScraper()
         passive = scraper.run(indicator)  # returns table of data rows {ip, domain, date, ip_location}
@@ -173,10 +174,9 @@ def passive_hosts(self, indicator, source):
 
 @app.task(bind=True)
 def malware_samples(self, indicator, source):
-
     if source == "VTO":
         scraper = VirusTotalScraper()
-        malware = scraper.get_malware(indicator) #
+        malware = scraper.get_malware(indicator)  #
 
     elif source == "TEX":
         scraper = ThreatExpertScraper()
@@ -200,19 +200,56 @@ def malware_samples(self, indicator, source):
             print(e)
 
 
+# Task to look up totalhash domain
 @app.task(bind=True)
-def total_hash_results(self, indicator):
+def domain_th(self, domain):
+    api_id = settings.TOTAL_HASH_API_ID
+    api_secret = settings.TOTAL_HASH_SECRET
     current_time = datetime.datetime.utcnow()
-    th_results = lookup_ip_total_hash(indicator)
-    logger.warn('MY TOTAL HASH RESULT >>>> ', th_results)
-
-    if th_results:
+    th = TotalHashApi(user=api_id, key=api_secret)
+    # query = str.join(':', ("dnsrr", domain))
+    query = "dnsrr:" + domain
+    res = th.do_search(query)
+    record = th.json_response(res)
+    logger = logging.getLogger(None)
+    logger.info("Retrieved Totalhash data for query %s Data: %s" % (query, record))
+    if record:
         try:
-            record_entry = IndicatorRecord(record_type="TR",
-                                           info_source='THS',
+            record_entry = IndicatorRecord(record_type="TH",
+                                           info_source="THS",
                                            info_date=current_time,
-                                           info=OrderedDict({"record": th_results,
-                                                             "foo2": "bar2"}))
+                                           info=record)
+            logger.info("Created TH record_entry %s" % str(record_entry))
             record_entry.save()
+            logger.info("TH record saved successfully")
         except Exception as e:
+            logger.warn("Error creating or saving TH record: %s" % str(e))
             print(e)
+
+
+# Task to look up totalhash ip
+@app.task(bind=True)
+def ip_th(self, ip):
+    try:
+        ipaddress.ip_address(ip)
+        api_id = settings.TOTAL_HASH_API_ID
+        api_secret = settings.TOTAL_HASH_SECRET
+        current_time = datetime.datetime.utcnow()
+        th = TotalHashApi(user=api_id, key=api_secret)
+        query = 'ip:' + ip
+        res = th.do_search(query)
+        record = th.json_response(res)
+        logger = logging.getLogger(None)
+        logger.info("Retrieved Totalhash data for ip %s. Data: %s" % (ip, record))
+        if record:
+            try:
+                record_entry = IndicatorRecord(record_type="TH",
+                                               info_source="THS",
+                                               info_date=current_time,
+                                               info=record)
+                record_entry.save()
+            except Exception as e:
+                print(e)
+    except ValueError:
+        logger.debug("Invalid IP address passed")
+        return

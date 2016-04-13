@@ -77,15 +77,14 @@ import hmac
 import xmltodict
 
 
-class TotalHashApi():
-    LOGGER = logging.getLogger(__name__)
-
+class TotalHashApi:
     def __init__(self, user='', key=''):
         self.baseurl = "http://api.totalhash.com/"
         self.user = user
         self.key = key
+        self.logger = logging.getLogger(__name__)
 
-    def do_search(self, this_query, page_num=10):
+    def do_search(self, this_query, page_num=0):
         if page_num:
             url = self.baseurl + "search/" + this_query + "&id=%s" % self.user + "&sign=%s" % \
                                                                                  self.get_signature(this_query)
@@ -115,13 +114,13 @@ class TotalHashApi():
 
     def string_response(self, response):
         opener = urllib.request.build_opener()
-        response.add_header('User-Agent', 'Mozilla/4.0 (compatible; MSIE+8.0; Windows NT 5.1; Trident/4.0;)')
+        # response.add_header('User-Agent', 'Mozilla/4.0 (compatible; MSIE+8.0; Windows NT 5.1; Trident/4.0;)')
         data = opener.open(response).read().decode('utf-8').strip()
         return data
 
-    def json_response(self, response, pretty=True):
+    def json_response(self, response, pretty=False):
         opener = urllib.request.build_opener()
-        response.add_header('User-Agent', 'Mozilla/4.0 (compatible; MSIE+8.0; Windows NT 5.1; Trident/4.0;)')
+        # response.add_header('User-Agent', 'Mozilla/4.0 (compatible; MSIE+8.0; Windows NT 5.1; Trident/4.0;)')
         data = opener.open(response).read().decode('utf-8').strip()
         if pretty:
             return json.dumps(self.fix_keys(xmltodict.parse(data)), sort_keys=False, indent=4)

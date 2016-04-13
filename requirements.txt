@@ -26,3 +26,4 @@ tldextract==1.5.1
 Unipath==1.1
 werkzeug==0.9.6
 xmltodict==0.10.1
+ipaddress==1.0.16
