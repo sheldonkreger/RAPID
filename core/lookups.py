@@ -123,12 +123,12 @@ def lookup_ip_censys_https(ip):
 
 
 def lookup_ip_total_hash(ip):
-    logger.debug('***** in lookup_ip_total_hash')
     api_id = settings.TOTAL_HASH_API_ID
     api_secret = settings.TOTAL_HASH_SECRET
     try:
         th = TotalHashApi(user=api_id, key=api_secret)
-        query = "ip:" + ip
+        # query = "ip:" + ip
+        query = "dnsrr:" + ip
         res = th.do_search(query)
         return th.json_response(res)
     except Exception as e:
