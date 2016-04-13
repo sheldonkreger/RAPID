@@ -65,6 +65,7 @@ echo "Created RAPID application log"
 
 pushd $APPLICATION_DIR/core/
 if [ ! -f "GeoLite2-City.mmdb" ]
+then
 	wget "http://geolite.maxmind.com/download/geoip/database/GeoLite2-City.mmdb.gz"
 	gunzip GeoLite2-City.mmdb.gz
 	echo "Downloaded and extracted Maxmind DB"
