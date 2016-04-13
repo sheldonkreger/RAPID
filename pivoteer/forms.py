@@ -79,6 +79,9 @@ class SubmissionForm(forms.Form):
             new_task = group([malware_samples.s(indicator, "TEX"),
                               malware_samples.s(indicator, "VTO")])()
 
+        elif record_type == "SafeBrowsing":
+            new_task = group(google_safebrowsing.s(indicator))()
+
         else:
             new_task = None
 

@@ -4,13 +4,13 @@ import tldextract
 import pythonwhois
 import dns.resolver
 import geoip2.database
+import urllib.request
 from ipwhois import IPWhois
 from collections import OrderedDict
 from ipwhois.ipwhois import IPDefinedError
 from censys.ipv4 import CensysIPv4
 from censys.base import CensysException
 from django.conf import settings
-
 
 logger = logging.getLogger(__name__)
 current_directory = os.path.dirname(__file__)
@@ -111,6 +111,11 @@ def lookup_ip_whois(ip):
         logger.error("Unexpected error %s" % unexpected_error)
 
     return None
+
+def lookup_google_safe_browsing(domain):
+    url = "https://sb-ssl.google.com/safebrowsing/api/lookup?client=" + settings.GOOGLE_SAFEBROWSING_API_CLIENT + "&key=" + settings.GOOGLE_SAFEBROWSING_API_KEY + "&appver=1.5.2&pver=3.1&url=" + domain
+    response = urllib.request.urlopen(url)
+    return response.status
 
 def lookup_ip_censys_https(ip):
     api_id = settings.CENSYS_API_ID

@@ -4,8 +4,8 @@ import datetime, logging, json
 from collections import OrderedDict
 from django.conf import settings
 from RAPID.celery import app
-from core.lookups import lookup_ip_whois, lookup_domain_whois, resolve_domain, geolocate_ip, lookup_ip_censys_https
 from core.threatcrowd import ThreatCrowd
+from core.lookups import lookup_ip_whois, lookup_domain_whois, resolve_domain, geolocate_ip, lookup_ip_censys_https, lookup_google_safe_browsing
 from pivoteer.collectors.scrape import RobtexScraper, InternetIdentityScraper
 from pivoteer.collectors.scrape import VirusTotalScraper, ThreatExpertScraper
 from pivoteer.collectors.api import PassiveTotal
@@ -198,3 +198,18 @@ def malware_samples(self, indicator, source):
             record_entry.save()
         except Exception as e:
             print(e)
+
+@app.task(bind=True)
+def google_safebrowsing(self, indicator):
+    current_time = datetime.datetime.utcnow()
+    safebrowsing_status = lookup_google_safe_browsing(indicator)
+    try:
+        record_entry = IndicatorRecord(record_type="SB",
+                                       info_source='GSB',
+                                       info_date=current_time,
+                                       # We store the status code that the Google SafeSearch API returns.
+                                       info=OrderedDict({"indicator": indicator,
+                                                        "statusCode": safebrowsing_status}))
+        record_entry.save()
+    except Exception as e:
+        print(e)

@@ -1,0 +1,20 @@
+<h3>Google SafeBrowsing</h3>
+
+    <table id="SB_table" class="table display">
+        <thead>
+            <tr>
+                <th>Submission Date</th>
+{#                <th>Hash Value</th>#}
+                <th>SafeBrowsing Status Code</th>
+            </tr>
+        {% for record in records %}
+          <tr>
+
+            <th>{{ record.info_date }}</th>
+            <th>{{ record.info.statusCode }}</th>
+          </tr>
+        {%  endfor %}
+        </thead>
+
+        <tbody>
+    </table>
