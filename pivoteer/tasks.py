@@ -1,19 +1,52 @@
 from __future__ import absolute_import
 
-import datetime
-import logging
+import datetime, logging, json
 from collections import OrderedDict
 from django.conf import settings
 from RAPID.celery import app
-from core.lookups import lookup_ip_whois, lookup_domain_whois, resolve_domain, geolocate_ip, lookup_ip_censys_https, \
-    lookup_ip_total_hash
+from core.lookups import lookup_ip_whois, lookup_domain_whois, resolve_domain, geolocate_ip, lookup_ip_censys_https, lookup_ip_total_hash
+from core.threatcrowd import ThreatCrowd
 from pivoteer.collectors.scrape import RobtexScraper, InternetIdentityScraper
 from pivoteer.collectors.scrape import VirusTotalScraper, ThreatExpertScraper
 from pivoteer.collectors.api import PassiveTotal
 from .models import IndicatorRecord
 
-logger = logging.getLogger(__name__)
+# Task to look up threatcrowd domain
+@app.task(bind=True)
+def domain_thc(self, domain):
+    current_time = datetime.datetime.utcnow()
+    record = ThreatCrowd.queryDomain(domain)
+    record['domain'] = domain
+    logger = logging.getLogger(None)
+    logger.info("Retrieved ThreatCrowd data for domain %s. Data: %s" % (domain, json.dumps(record)))
+    if record:
+        try:
+            record_entry = IndicatorRecord(record_type="TR",
+                                            info_source="THR",
+                                            info_date=current_time,
+                                            info=record)
+            logger.info("Created TR record_entry %s" % str(record_entry))
+            record_entry.save()
+            logger.info("TR record saved successfully")
+        except Exception as e:
+            logger.warn("Error creating or saving TR record: %s" % str(e))
+            print(e)
 
+# Task to look up threatcrowd ip
+@app.task(bind=True)
+def ip_thc(self, ip):
+    current_time = datetime.datetime.utcnow()
+    record = ThreatCrowd.queryIp(ip)
+    record['ip'] = ip
+    if record:
+        try:
+            record_entry = IndicatorRecord(record_type="TR",
+                                            info_source="THR",
+                                            info_date=current_time,
+                                            info=record)
+            record_entry.save()
+        except Exception as e:
+            print(e)
 
 @app.task(bind=True)
 def domain_whois(self, domain):
@@ -39,6 +72,7 @@ def domain_whois(self, domain):
 
 @app.task(bind=True)
 def ip_whois(self, ip_address):
+
     current_time = datetime.datetime.utcnow()
     record = lookup_ip_whois(ip_address)
 
@@ -62,6 +96,7 @@ def ip_whois(self, ip_address):
 
 @app.task(bind=True)
 def domain_hosts(self, domain):
+
     current_time = datetime.datetime.utcnow()
     hosts = resolve_domain(domain)
 
@@ -85,6 +120,7 @@ def domain_hosts(self, domain):
 
 @app.task(bind=True)
 def ip_hosts(self, ip_address):
+
     current_time = datetime.datetime.utcnow()
     scraper = RobtexScraper()
     hosts = scraper.run(ip_address)
@@ -104,9 +140,9 @@ def ip_hosts(self, ip_address):
             except Exception as e:
                 print(e)
 
-
 @app.task(bind=True)
 def passive_hosts(self, indicator, source):
+
     if source == "IID":
         scraper = InternetIdentityScraper()
         passive = scraper.run(indicator)  # returns table of data rows {ip, domain, date, ip_location}
@@ -137,9 +173,10 @@ def passive_hosts(self, indicator, source):
 
 @app.task(bind=True)
 def malware_samples(self, indicator, source):
+
     if source == "VTO":
         scraper = VirusTotalScraper()
-        malware = scraper.get_malware(indicator)  #
+        malware = scraper.get_malware(indicator) #
 
     elif source == "TEX":
         scraper = ThreatExpertScraper()

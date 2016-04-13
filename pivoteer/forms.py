@@ -59,11 +59,13 @@ class SubmissionForm(forms.Form):
 
             if self.indicator_type == "domain":
                 new_task = group([domain_whois.s(indicator),
-                                  domain_hosts.s(indicator)])()
+                                  domain_hosts.s(indicator),
+                                  domain_thc.s(indicator)])()
 
             elif self.indicator_type == "ip":
                 new_task = group([ip_whois.s(indicator),
-                                  ip_hosts.s(indicator)])()
+                                  ip_hosts.s(indicator),
+                                  ip_thc.s(indicator)])()
 
             else:
                 new_task = None
