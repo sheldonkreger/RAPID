@@ -145,7 +145,8 @@ class CheckTask(LoginRequiredMixin, View):
             self.template_vars["records"] = safebrowsing_records
 
             self.template_vars["origin"] = indicator
-            return render(request, self.template_name, self.template_vars)
+
+        return render(request, self.template_name, self.template_vars)
 
 
 class ExportRecords(LoginRequiredMixin, View):
