@@ -11,13 +11,14 @@ from pivoteer.collectors.scrape import VirusTotalScraper, ThreatExpertScraper
 from pivoteer.collectors.api import PassiveTotal
 from .models import IndicatorRecord
 
+logger = logging.getLogger(None)
+
 # Task to look up threatcrowd domain
 @app.task(bind=True)
 def domain_thc(self, domain):
     current_time = datetime.datetime.utcnow()
     record = ThreatCrowd.queryDomain(domain)
     record['domain'] = domain
-    logger = logging.getLogger(None)
     logger.info("Retrieved ThreatCrowd data for domain %s. Data: %s" % (domain, json.dumps(record)))
     if record:
         try:
@@ -202,14 +203,26 @@ def malware_samples(self, indicator, source):
 @app.task(bind=True)
 def google_safebrowsing(self, indicator):
     current_time = datetime.datetime.utcnow()
-    safebrowsing_status = lookup_google_safe_browsing(indicator)
+    safebrowsing_response = lookup_google_safe_browsing(indicator)
+    logger.error("hooray")
+
+    safebrowsing_status = safebrowsing_response[0]
+    safebrowsing_body = safebrowsing_response[1]
+    logger.error(safebrowsing_status)
+    logger.error(safebrowsing_body)
+    # if safebrowsing_response.read():
+    # safebrowsing_body = safebrowsing_response.read()
+        # logger.error("hit")
+    # else:
+    #     safebrowsing_body = "OK"
     try:
         record_entry = IndicatorRecord(record_type="SB",
                                        info_source='GSB',
                                        info_date=current_time,
                                        # We store the status code that the Google SafeSearch API returns.
                                        info=OrderedDict({"indicator": indicator,
-                                                        "statusCode": safebrowsing_status}))
+                                                        "statusCode": safebrowsing_status,
+                                                         "body": safebrowsing_body}))
         record_entry.save()
     except Exception as e:
         print(e)

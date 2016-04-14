@@ -112,10 +112,34 @@ def lookup_ip_whois(ip):
 
     return None
 
+# See docs: https://developers.google.com/safe-browsing/lookup_guide#HTTPGETRequest
+
 def lookup_google_safe_browsing(domain):
     url = "https://sb-ssl.google.com/safebrowsing/api/lookup?client=" + settings.GOOGLE_SAFEBROWSING_API_CLIENT + "&key=" + settings.GOOGLE_SAFEBROWSING_API_KEY + "&appver=1.5.2&pver=3.1&url=" + domain
     response = urllib.request.urlopen(url)
-    return response.status
+
+    # We only get a request body when Google thinks the indicator is malicious. There are a few different values it might return.
+    if response.status == 200:
+        body = response.read().decode("utf-8")
+
+    elif response.status == 400:
+        logger.error("Bad request to Google SafeBrowsing API. Indicator:")
+        logger.error(domain)
+        body = "Bad Request to API"
+
+    elif response.status == 401:
+        logger.error("Bad API key for Google SafeBrowsing API.")
+        body = "Bad Request to API"
+
+    elif response.status == 503:
+        logger.error("Google SafeSearch API is unresponsive. Potentially too many requests coming from our application, or their service is down.")
+        body = "SafeBrowsing API offline or throttling our requests"
+
+    # There is no body when the API thinks this inidcator is safe.
+    else:
+        body = "OK"
+
+    return (response.status, body)
 
 def lookup_ip_censys_https(ip):
     api_id = settings.CENSYS_API_ID
