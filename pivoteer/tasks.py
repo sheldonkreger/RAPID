@@ -204,17 +204,8 @@ def malware_samples(self, indicator, source):
 def google_safebrowsing(self, indicator):
     current_time = datetime.datetime.utcnow()
     safebrowsing_response = lookup_google_safe_browsing(indicator)
-    logger.error("hooray")
-
     safebrowsing_status = safebrowsing_response[0]
     safebrowsing_body = safebrowsing_response[1]
-    logger.error(safebrowsing_status)
-    logger.error(safebrowsing_body)
-    # if safebrowsing_response.read():
-    # safebrowsing_body = safebrowsing_response.read()
-        # logger.error("hit")
-    # else:
-    #     safebrowsing_body = "OK"
     try:
         record_entry = IndicatorRecord(record_type="SB",
                                        info_source='GSB',
