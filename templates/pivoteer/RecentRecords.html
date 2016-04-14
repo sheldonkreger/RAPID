@@ -154,10 +154,10 @@ Jump to: <br><a href="#whois">whois</a><br><a href="#threatcrowd">threatcrowd</a
   <thead>
     <tr>
       {% if tc_info.info.subdomains %}<th>Subdomains</th>{% endif %}
-      {% if tc_info.info.hashes %}<th>Hashes</th>{% endif %}
       {% if tc_info.info.resolutions %}
       <th>Resolutions</th>
       {% endif %}
+      {% if tc_info.info.hashes %}<th>Hashes</th>{% endif %}
     </tr>
   </thead>
   <tbody>
@@ -169,17 +169,17 @@ Jump to: <br><a href="#whois">whois</a><br><a href="#threatcrowd">threatcrowd</a
       {% endfor %}
       </td>
       {% endif %}
-      {% if tc_info.info.hashes %}
-      <td>
-      {% for item in tc_info.info.hashes %}
-        <br>{{ item }}
-      {% endfor %}
-      </td>
-      {% endif %}
       {% if tc_info.info.resolutions %}
       <td>
       {% for item in tc_info.info.resolutions %}
         <br>{{item.last_resolved}} {% if item.domain %}<span class="pivot">{{ item.domain }}</span>{% endif %}{% if item.ip_address %}<span class="pivot">{{ item.ip_address }}</span>{% endif %}       
+      {% endfor %}
+      </td>
+      {% endif %}
+      {% if tc_info.info.hashes %}
+      <td>
+      {% for item in tc_info.info.hashes %}
+        <br>{{ item }}
       {% endfor %}
       </td>
       {% endif %}
