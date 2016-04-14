@@ -75,6 +75,25 @@ import urllib.request, urllib.error, urllib.parse
 import hashlib
 import hmac
 import xmltodict
+import re
+
+
+def convert_function(p_str):
+    return re.sub(r'\W+', '', p_str)
+
+
+def fix_nested_keys(d, convert_function):
+    new = {}
+    for k, v in d.items():
+        new_v = v
+        if isinstance(v, dict):
+            new_v = fix_nested_keys(v, convert_function)
+        elif isinstance(v, list):
+            new_v = list()
+            for x in v:
+                new_v.append(fix_nested_keys(x, convert_function))
+        new[convert_function(k)] = new_v
+    return new
 
 
 class TotalHashApi:
@@ -123,12 +142,13 @@ class TotalHashApi:
         # response.add_header('User-Agent', 'Mozilla/4.0 (compatible; MSIE+8.0; Windows NT 5.1; Trident/4.0;)')
         data = opener.open(response).read().decode('utf-8').strip()
         if pretty:
-            return json.dumps(self.fix_keys(xmltodict.parse(data)), sort_keys=False, indent=4)
+            return json.dumps(fix_nested_keys(xmltodict.parse(data), convert_function), sort_keys=False, indent=4)
         else:
-            return json.dumps(self.fix_keys(xmltodict.parse(data)))
+            return json.dumps(fix_nested_keys(xmltodict.parse(data), convert_function))
 
     def get_signature(self, query):
         return hmac.new(self.key.encode('utf-8'), msg=query.encode('utf-8'), digestmod=hashlib.sha256).hexdigest()
 
-    def fix_keys(self, somedict):
-        return dict([(str(key_value[0]).replace('@', ""), key_value[1]) for key_value in list(somedict.items())])
+    def fix_keys(somedict):
+        return dict([(str(key_value[0]).replace('@', ""), key_value) for key_value in list(somedict.items())])
+

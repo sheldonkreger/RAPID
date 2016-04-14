@@ -1,6 +1,7 @@
 from __future__ import absolute_import
 
 import datetime, logging, json, ipaddress
+import dpath.util
 from collections import OrderedDict
 from django.conf import settings
 from RAPID.celery import app
@@ -211,21 +212,25 @@ def domain_th(self, domain):
     query = "dnsrr:" + domain
     res = th.do_search(query)
     record = th.json_response(res)
+    record_count = dpath.util.get(json.loads(record), "response/result/numFound")
     logger = logging.getLogger(None)
-    logger.info("Retrieved Totalhash data for query %s Data: %s" % (query, record))
-    if record:
+    logger.info(">>>>>>>>>Retrieved Totalhash data for query %s Data: %s" % (query, record))
+    if int(record_count) > 0:
         try:
+            dict_record = json.loads(record)
+            dict_record['domain'] = domain
             record_entry = IndicatorRecord(record_type="TH",
                                            info_source="THS",
                                            info_date=current_time,
-                                           info=record)
+                                           info=dict_record)
             logger.info("Created TH record_entry %s" % str(record_entry))
             record_entry.save()
             logger.info("TH record saved successfully")
         except Exception as e:
             logger.warn("Error creating or saving TH record: %s" % str(e))
             print(e)
-
+    else:
+        logger.info(">>>>>>>>>Totalhash data is not saved because recode count is %s" % record_count)
 
 # Task to look up totalhash ip
 @app.task(bind=True)
@@ -253,3 +258,4 @@ def ip_th(self, ip):
     except ValueError:
         logger.debug("Invalid IP address passed")
         return
+

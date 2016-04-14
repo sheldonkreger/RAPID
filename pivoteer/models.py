@@ -10,7 +10,6 @@ from core.utilities import check_domain_valid, get_base_domain
 
 
 class IndicatorManager(models.Manager):
-
     LOGGER = logging.getLogger(__name__)
 
     def host_records(self, indicator):
@@ -32,6 +31,19 @@ class IndicatorManager(models.Manager):
         if records:
             return records.latest('info_date')
         IndicatorManager.LOGGER.info("Failed to retrieve ThreatCrowd data for indicator %s" % indicator)
+        return records
+
+    def recent_th(self, indicator):
+        record_type = 'TH'
+        time_frame = datetime.datetime.utcnow() + datetime.timedelta(hours=-24)
+
+        records = self.get_queryset().filter(Q(record_type=record_type),
+                                             Q(info_date__gte=time_frame),
+                                             Q(info__contains=indicator))
+        if records:
+            IndicatorManager.LOGGER.info(">>>>>>>>>>RECENT_TH RECORDS", records)
+            return records.latest('info_date')
+        IndicatorManager.LOGGER.info("Failed to retrieve TotalHash data for indicator %s" % indicator)
         return records
 
     def recent_hosts(self, indicator):
@@ -95,8 +107,8 @@ class IndicatorManager(models.Manager):
             indicator = get_base_domain(indicator)
 
         records = self.get_queryset().filter(Q(record_type=record_type),
-                                            Q(info__at_query__endswith=indicator) |
-                                            Q(info__at_domain_name__endswith=indicator)).values('info', 'info_date')
+                                             Q(info__at_query__endswith=indicator) |
+                                             Q(info__at_domain_name__endswith=indicator)).values('info', 'info_date')
         return records
 
     def recent_whois(self, indicator):
@@ -146,7 +158,6 @@ class IndicatorManager(models.Manager):
 
 
 class IndicatorRecord(models.Model):
-
     record_choices = (
         ('HR', 'Host Record'),
         ('MR', 'Malware Record'),
@@ -161,6 +172,7 @@ class IndicatorRecord(models.Model):
         ('DNS', 'DNS Query'),
         ('REX', 'Robtex'),
         ('WIS', 'WHOIS'),
+        ('THA', 'Total Hash')
     )
 
     record_type = models.CharField(max_length=2, choices=record_choices)
@@ -183,7 +195,6 @@ class IndicatorRecord(models.Model):
         return info_sha1
 
     def save(self, *args, **kwargs):
-
         if not self.info_hash:
             self.info_hash = self.generate_hash()
 
@@ -205,4 +216,3 @@ class ExternalSessions(models.Model):
 
     service = models.CharField(max_length=3, choices=service_choices)
     cookie = JsonField()
-
