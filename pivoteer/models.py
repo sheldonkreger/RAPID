@@ -156,12 +156,26 @@ class IndicatorManager(models.Manager):
 
         return unique_records
 
+    def safebrowsing_record(self, indicator):
+        record_type = 'SB'
+        # time_frame = datetime.datetime.utcnow() + datetime.timedelta(hours=-24)
+        if check_domain_valid(indicator):
+            records = self.get_queryset().filter(Q(record_type=record_type),
+                                                 # Q(info_date__lt=time_frame),
+                                                 Q(info__at_indicator__exact=indicator))
+                                                     # Q(info__at_domain_name__endswith=indicator)).values('info_hash',
+                                                     #                                                    'info_date')
+        # records = 'foobar-records'
+        return records
+
 
 class IndicatorRecord(models.Model):
     record_choices = (
         ('HR', 'Host Record'),
         ('MR', 'Malware Record'),
         ('WR', 'Whois Record'),
+        ('TR', 'ThreatCrowd Record'),
+        ('SB', 'SafeBrowsing Record'),
     )
 
     source_choices = (
@@ -172,6 +186,8 @@ class IndicatorRecord(models.Model):
         ('DNS', 'DNS Query'),
         ('REX', 'Robtex'),
         ('WIS', 'WHOIS'),
+        ('THR', 'ThreatCrowd'),
+        ('GSB', 'Google Safe Browsing'),
         ('THA', 'Total Hash')
     )
 

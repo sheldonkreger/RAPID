@@ -127,6 +127,18 @@ class CheckTask(LoginRequiredMixin, View):
             malware_records = IndicatorRecord.objects.malware_records(indicator)
             self.template_vars["malware_records"] = malware_records
 
+            self.template_vars["origin"] = indicator
+
+        elif record_type == "SafeBrowsing":
+
+            safebrowsing_records = IndicatorRecord.objects.safebrowsing_record(indicator)
+            self.template_name = "pivoteer/Google.html"
+
+            # safesearch_records = IndicatorRecord.objects.safesearch_records(indicator)
+            # self.template_vars["safesearch_records"] = safesearch_records
+
+            self.template_vars["records"] = safebrowsing_records
+
             # Current TotalHash record
             th_records = IndicatorRecord.objects.recent_th(indicator)
             self.template_vars["th_records"] = th_records
