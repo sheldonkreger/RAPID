@@ -127,7 +127,12 @@ class CheckTask(LoginRequiredMixin, View):
             malware_records = IndicatorRecord.objects.malware_records(indicator)
             self.template_vars["malware_records"] = malware_records
 
+            # Current Tot   alHash record
+            th_records = IndicatorRecord.objects.recent_th(indicator)
+            self.template_vars["th_records"] = th_records
+
             self.template_vars["origin"] = indicator
+
 
         elif record_type == "SafeBrowsing":
 
@@ -139,12 +144,8 @@ class CheckTask(LoginRequiredMixin, View):
 
             self.template_vars["records"] = safebrowsing_records
 
-            # Current TotalHash record
-            th_records = IndicatorRecord.objects.recent_th(indicator)
-            self.template_vars["th_records"] = th_records
-
-        self.template_vars["origin"] = indicator
-        return render(request, self.template_name, self.template_vars)
+            self.template_vars["origin"] = indicator
+            return render(request, self.template_name, self.template_vars)
 
 
 class ExportRecords(LoginRequiredMixin, View):
