@@ -158,9 +158,8 @@ class IndicatorManager(models.Manager):
 
     def safebrowsing_record(self, indicator):
         record_type = 'SB'
-        
         records = self.get_queryset().filter(Q(record_type=record_type),
-                                                 Q(info__at_indicator__exact=indicator))
+                                             Q(info__at_indicator__exact=indicator))
         return records
 
 
