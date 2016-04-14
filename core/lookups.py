@@ -4,13 +4,13 @@ import tldextract
 import pythonwhois
 import dns.resolver
 import geoip2.database
+import urllib.request
 from ipwhois import IPWhois
 from collections import OrderedDict
 from ipwhois.ipwhois import IPDefinedError
 from censys.ipv4 import CensysIPv4
 from censys.base import CensysException
 from django.conf import settings
-
 
 logger = logging.getLogger(__name__)
 current_directory = os.path.dirname(__file__)
@@ -111,6 +111,35 @@ def lookup_ip_whois(ip):
         logger.error("Unexpected error %s" % unexpected_error)
 
     return None
+
+# See docs: https://developers.google.com/safe-browsing/lookup_guide#HTTPGETRequest
+
+def lookup_google_safe_browsing(domain):
+    url = "https://sb-ssl.google.com/safebrowsing/api/lookup?client=" + settings.GOOGLE_SAFEBROWSING_API_CLIENT + "&key=" + settings.GOOGLE_SAFEBROWSING_API_KEY + "&appver=1.5.2&pver=3.1&url=" + domain
+    response = urllib.request.urlopen(url)
+
+    # We only get a request body when Google thinks the indicator is malicious. There are a few different values it might return.
+    if response.status == 200:
+        body = response.read().decode("utf-8")
+
+    elif response.status == 400:
+        logger.error("Bad request to Google SafeBrowsing API. Indicator:")
+        logger.error(domain)
+        body = "Bad Request to API"
+
+    elif response.status == 401:
+        logger.error("Bad API key for Google SafeBrowsing API.")
+        body = "Bad Request to API"
+
+    elif response.status == 503:
+        logger.error("Google SafeSearch API is unresponsive. Potentially too many requests coming from our application, or their service is down.")
+        body = "SafeBrowsing API offline or throttling our requests"
+
+    # There is no body when the API thinks this inidcator is safe.
+    else:
+        body = "OK"
+
+    return (response.status, body)
 
 def lookup_ip_censys_https(ip):
     api_id = settings.CENSYS_API_ID
