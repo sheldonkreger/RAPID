@@ -31,8 +31,12 @@ Jump to:
                     <td>
                         {% if record.info.ip != origin %}
                             <span class="pivot">{{ record.info.ip }}</span>
+                            <br>
+                            {{ record.info.geo_location.country }}
                         {% else %}
                             {{ record.info.ip }}
+                            <br>
+                            {{ record.info.geo_location.country }}
                         {% endif %}
                     </td>
                     <td>{{ record.get_info_source_display }}</td>
