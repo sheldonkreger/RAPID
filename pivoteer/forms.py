@@ -15,13 +15,7 @@ class SubmissionForm(forms.Form):
 
     def clean_indicator(self):
         indicator = self.cleaned_data.get('indicator').strip().lower()
-        verified_type = discover_type(indicator)
-
-        if verified_type:
-            self.indicator_type = verified_type
-
-        if self.indicator_type != "domain" and self.indicator_type != "ip":
-            raise forms.ValidationError('That is not a valid ip or domain')
+        self.indicator_type = discover_type(indicator)
 
         return indicator
 
@@ -60,27 +54,39 @@ class SubmissionForm(forms.Form):
             if self.indicator_type == "domain":
                 new_task = group([domain_whois.s(indicator),
                                   domain_hosts.s(indicator),
-                                  domain_thc.s(indicator)])()
+                                  domain_thc.s(indicator),
+                                  certificate_cen.s(indicator)])()
 
             elif self.indicator_type == "ip":
                 new_task = group([ip_whois.s(indicator),
                                   ip_hosts.s(indicator),
-                                  ip_thc.s(indicator)])()
-
+                                  ip_thc.s(indicator),
+                                  certificate_cen.s(indicator)])()
+            elif self.indicator_type == "other":
+                new_task = group([certificate_cen.s(indicator)])()
             else:
                 new_task = None
 
         elif record_type == "Historical":
-            new_task = group([passive_hosts.s(indicator, "VTO"),
+            if self.indicator_type != "other":
+                new_task = group([passive_hosts.s(indicator, "VTO"),
                               # passive_hosts.s(indicator, "PTO"),
                               passive_hosts.s(indicator, "IID")])()
+            else:
+                new_task = None
 
         elif record_type == "Malware":
-            new_task = group([malware_samples.s(indicator, "TEX"),
+            if self.indicator_type != "other":
+                new_task = group([malware_samples.s(indicator, "TEX"),
                               malware_samples.s(indicator, "VTO")])()
+            else:
+                new_task = None
 
         elif record_type == "SafeBrowsing":
-            new_task = group(google_safebrowsing.s(indicator))()
+            if self.indicator_type != "other":
+                new_task = group(google_safebrowsing.s(indicator))()
+            else:
+                new_task = None
 
         else:
             new_task = None

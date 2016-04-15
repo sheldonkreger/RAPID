@@ -5,13 +5,30 @@ from collections import OrderedDict
 from django.conf import settings
 from RAPID.celery import app
 from core.threatcrowd import ThreatCrowd
-from core.lookups import lookup_ip_whois, lookup_domain_whois, resolve_domain, geolocate_ip, lookup_ip_censys_https, lookup_google_safe_browsing
+from core.lookups import lookup_ip_whois, lookup_domain_whois, resolve_domain, geolocate_ip, lookup_ip_censys_https, lookup_google_safe_browsing, lookup_certs_censys
 from pivoteer.collectors.scrape import RobtexScraper, InternetIdentityScraper
 from pivoteer.collectors.scrape import VirusTotalScraper, ThreatExpertScraper
 from pivoteer.collectors.api import PassiveTotal
 from .models import IndicatorRecord
 
 logger = logging.getLogger(None)
+
+@app.task(bind=True)
+def certificate_cen(self, indicator):
+	current_time = datetime.datetime.utcnow()
+	record = lookup_certs_censys(indicator, 25)
+	record['indicator'] = indicator
+	logger.info("Retrieved Censys.io search results for indicator %s" % indicator)
+	if record:
+		try:
+			record_entry = IndicatorRecord(record_type="CE",
+											info_source="CEN",
+											info_date=current_time,
+											info=record)
+			record_entry.save()
+			logger.info("CE record saved successfully")
+		except Exception as e:
+			logger.warn("Error creating or saving CE record: %s" % str(e))
 
 # Task to look up threatcrowd domain
 @app.task(bind=True)
