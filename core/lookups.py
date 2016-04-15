@@ -1,3 +1,4 @@
+import unittest
 import os
 import logging
 import tldextract
@@ -9,6 +10,7 @@ from ipwhois import IPWhois
 from collections import OrderedDict
 from ipwhois.ipwhois import IPDefinedError
 from censys.ipv4 import CensysIPv4
+from censys.certificates import CensysCertificates
 from censys.base import CensysException
 from django.conf import settings
 
@@ -150,5 +152,27 @@ def lookup_ip_censys_https(ip):
         return ip_data['443']['https']['tls']['certificate']['parsed']
     except KeyError:
         return {'status':404,'message':"No HTTPS certificate data was found for IP " + ip}
+    except CensysException as ce:
+        return {'status':ce.status_code,'message':ce.message}
+
+def lookup_certs_censys(other, count):
+    api_id = settings.CENSYS_API_ID
+    api_secret = settings.CENSYS_API_SECRET
+
+    try:
+        cc = CensysCertificates(api_id=api_id, api_secret=api_secret)
+        generator = cc.search(other)
+        i = 0
+        results = {'records':[]}
+        for record in generator:
+            if i == 0:
+                results['total'] = generator.gi_frame.f_locals['payload']['metadata']['count']
+            for sha256 in record['parsed.fingerprint_sha256']:
+                results['records'].append(cc.view(sha256))
+                i+=1
+            if i >= count:
+                break
+        results['count'] = i
+        return results
     except CensysException as ce:
         return {'status':ce.status_code,'message':ce.message}

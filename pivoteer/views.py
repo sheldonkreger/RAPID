@@ -107,6 +107,9 @@ class CheckTask(LoginRequiredMixin, View):
             # Current ThreatCrowd record
             tc_info = IndicatorRecord.objects.recent_tc(indicator)
             self.template_vars["tc_info"] = tc_info
+            
+            cert_info = IndicatorRecord.objects.recent_cert(indicator)
+            self.template_vars["cert_info"] = cert_info
 
         elif record_type == "Historical":
 

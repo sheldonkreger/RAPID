@@ -1,7 +1,10 @@
 {% load pivoteer_extras %}
 
 <span id="top"></span>
-Jump to: <br><a href="#whois">whois</a><br><a href="#threatcrowd">threatcrowd</a>
+Jump to: 
+<br><a href="#whois">whois</a>
+<br><a href="#threatcrowd">threatcrowd</a>
+<br><a href="#certificates">certificate search</a>
 <h3>Hosting Within Last 24 Hours</h3>
 {% if current_hosts %}
     <table id="CR_table" class="table display">
@@ -41,7 +44,7 @@ Jump to: <br><a href="#whois">whois</a><br><a href="#threatcrowd">threatcrowd</a
                             Subject: {{ record.info.https_cert.subject_dn }}<br />
                             Issuer: {{ record.info.https_cert.issuer_dn }}<br />
                             SHA-256:
-                            <a target="_blank" href="https://www.censys.io/ipv4?q=443.https.tls.certificate.parsed.fingerprint_sha256:{{ record.info.https_cert.fingerprint_sha256 }}">
+                            <a target="_blank" href="https://www.censys.io/ipv4?q={{ record.info.https_cert.fingerprint_sha256 }}">
                                 {{ record.info.https_cert.fingerprint_sha256 }}
                                 <span class="glyphicon glyphicon-new-window"></span>
                             </a><br />
@@ -193,4 +196,40 @@ Jump to: <br><a href="#whois">whois</a><br><a href="#threatcrowd">threatcrowd</a
   {% endif %}
 {% else %}
 <h4>No Records Found</h4>
+{% endif %}
+
+<hr class="linebreak" id="certificates">
+<h3>Most Recent Certificate Search Results</h3>
+<a href="#top">Back to top</a><br><br>
+{% if cert_info %}
+<br><b>Total results: </b>{{ cert_info.info.total }}
+<b> Saved: </b>{{ cert_info.info.count }}
+<br><br><b>Permalink: </b><a href="https://www.censys.io/certificates?q={{ cert_info.info.indicator }}">https://www.censys.io/certificates?q={{ cert_info.info.indicator }}</a>
+<br>
+<table id="cert_table" class="table display">
+  <tbody>
+    {% for item in cert_info.info.records %}
+    <tr>
+      <td>
+		Subject: {{ item.parsed.subject_dn }}<br />
+		Issuer: {{ item.parsed.issuer_dn }}<br />
+		SHA-256:
+		<a target="_blank" href="https://www.censys.io/certificates/{{ item.parsed.fingerprint_sha256 }}">
+		    {{ item.parsed.fingerprint_sha256 }}
+		    <span class="glyphicon glyphicon-new-window"></span>
+		</a>
+		<a target="_blank" href="https://www.censys.io/ipv4?q={{ item.parsed.fingerprint_sha256 }}"> ipv4 search
+		<span class="glyphicon glyphicon-new-window"></span></a>
+		<a target="_blank" href="https://www.censys.io/domain/help?q={{ item.parsed.fingerprint_sha256 }}"> domain search
+		<span class="glyphicon glyphicon-new-window"></span></a>
+		<br />
+		Validity: {{ item.parsed.validity.start }} - {{ item.parsed.validity.end }}<br />      
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+<a href="#top">Back to top</a><br><br>
+{% else %}
+No certificate results loaded.
 {% endif %}

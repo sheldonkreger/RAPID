@@ -71,7 +71,7 @@ def discover_type(submission):
         return "domain"
 
     else:
-        return None
+        return "other"
 
 
 def get_base_domain(submission):
