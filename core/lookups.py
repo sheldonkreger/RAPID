@@ -1,18 +1,23 @@
+import unittest
 import os
 import logging
 import tldextract
 import pythonwhois
 import dns.resolver
 import geoip2.database
+<<<<<<< HEAD
 import google
+=======
+import urllib.request
+>>>>>>> upstream/master
 from ipwhois import IPWhois
 from collections import OrderedDict
 from ipwhois.ipwhois import IPDefinedError
 from censys.ipv4 import CensysIPv4
+from censys.certificates import CensysCertificates
 from censys.base import CensysException
 from django.conf import settings
 from urllib.parse import urlparse
-
 
 logger = logging.getLogger(__name__)
 current_directory = os.path.dirname(__file__)
@@ -115,6 +120,35 @@ def lookup_ip_whois(ip):
     return None
 
 
+# See docs: https://developers.google.com/safe-browsing/lookup_guide#HTTPGETRequest
+def lookup_google_safe_browsing(domain):
+    url = "https://sb-ssl.google.com/safebrowsing/api/lookup?client=" + settings.GOOGLE_SAFEBROWSING_API_CLIENT + "&key=" + settings.GOOGLE_SAFEBROWSING_API_KEY + "&appver=1.5.2&pver=3.1&url=" + domain
+    response = urllib.request.urlopen(url)
+
+    # We only get a request body when Google thinks the indicator is malicious. There are a few different values it might return.
+    if response.status == 200:
+        body = response.read().decode("utf-8")
+
+    elif response.status == 400:
+        logger.error("Bad request to Google SafeBrowsing API. Indicator:")
+        logger.error(domain)
+        body = "Bad Request to API"
+
+    elif response.status == 401:
+        logger.error("Bad API key for Google SafeBrowsing API.")
+        body = "Bad Request to API"
+
+    elif response.status == 503:
+        logger.error("Google SafeSearch API is unresponsive. Potentially too many requests coming from our application, or their service is down.")
+        body = "SafeBrowsing API offline or throttling our requests"
+
+    # There is no body when the API thinks this inidcator is safe.
+    else:
+        body = "OK"
+
+    return (response.status, body)
+
+
 def lookup_ip_censys_https(ip):
     api_id = settings.CENSYS_API_ID
     api_secret = settings.CENSYS_API_SECRET
@@ -172,3 +206,26 @@ def search_for_domain(domain, limit=10):
 
     logger.debug("Found top %d/%d search results for domain '%s': %s", len(result), limit, domain, result)
     return result
+
+
+def lookup_certs_censys(other, count):
+    api_id = settings.CENSYS_API_ID
+    api_secret = settings.CENSYS_API_SECRET
+
+    try:
+        cc = CensysCertificates(api_id=api_id, api_secret=api_secret)
+        generator = cc.search(other)
+        i = 0
+        results = {'records':[]}
+        for record in generator:
+            if i == 0:
+                results['total'] = generator.gi_frame.f_locals['payload']['metadata']['count']
+            for sha256 in record['parsed.fingerprint_sha256']:
+                results['records'].append(cc.view(sha256))
+                i+=1
+            if i >= count:
+                break
+        results['count'] = i
+        return results
+    except CensysException as ce:
+        return {'status':ce.status_code,'message':ce.message}

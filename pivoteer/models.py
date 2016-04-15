@@ -21,14 +21,26 @@ class IndicatorManager(models.Manager):
                                              Q(info__at_ip__endswith=indicator))
         return records
 
+    def recent_cert(self, indicator):
+        record_type = 'CE'
+        time_frame = datetime.datetime.utcnow() + datetime.timedelta(hours=-24)
+        
+        records = self.get_queryset().filter(Q(record_type=record_type),
+                                             Q(info_date__gte=time_frame),
+                                             Q(info__at_indicator__exact=indicator)).values('info', 'info_date')
+        if records:
+            return records.latest('info_date')
+        IndicatorManager.LOGGER.info("Failed to retrieve certificate data for indicator %s" % indicator)
+        return records
+
     def recent_tc(self, indicator):
         record_type = 'TR'
         time_frame = datetime.datetime.utcnow() + datetime.timedelta(hours=-24)
 
         records = self.get_queryset().filter(Q(record_type=record_type),
                                              Q(info_date__gte=time_frame),
-                                             Q(info__at_domain__endswith=indicator) |
-                                             Q(info__at_ip__endswith=indicator)).values('info', 'info_date')
+                                             Q(info__at_domain__exact=indicator) |
+                                             Q(info__at_ip__exact=indicator)).values('info', 'info_date')
         if records:
             return records.latest('info_date')
         IndicatorManager.LOGGER.info("Failed to retrieve ThreatCrowd data for indicator %s" % indicator)
@@ -144,6 +156,13 @@ class IndicatorManager(models.Manager):
 
         return unique_records
 
+    def safebrowsing_record(self, indicator):
+        record_type = 'SB'
+        
+        records = self.get_queryset().filter(Q(record_type=record_type),
+                                                 Q(info__at_indicator__exact=indicator))
+        return records
+
 
 class IndicatorRecord(models.Model):
 
@@ -152,6 +171,8 @@ class IndicatorRecord(models.Model):
         ('MR', 'Malware Record'),
         ('WR', 'Whois Record'),
         ('TR', 'ThreatCrowd Record'),
+        ('SB', 'SafeBrowsing Record'),
+        ('CE', 'Censys Record')
     )
 
     source_choices = (
@@ -163,6 +184,8 @@ class IndicatorRecord(models.Model):
         ('REX', 'Robtex'),
         ('WIS', 'WHOIS'),
         ('THR', 'ThreatCrowd'),
+        ('GSB', 'Google Safe Browsing'),
+        ('CEN', "Censys.io")
     )
 
     record_type = models.CharField(max_length=2, choices=record_choices)
