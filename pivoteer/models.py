@@ -184,7 +184,7 @@ class IndicatorRecord(models.Model):
         ('WIS', 'WHOIS'),
         ('THR', 'ThreatCrowd'),
         ('GSB', 'Google Safe Browsing'),
-        ('THS', 'Total Hash')
+        ('THS', 'Total Hash'),
         ('CEN', "Censys.io")
     )
 

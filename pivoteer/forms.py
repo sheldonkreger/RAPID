@@ -8,7 +8,6 @@ from celery import group
 
 
 class SubmissionForm(forms.Form):
-
     indicator = forms.CharField(label='Indicator Submission', widget=forms.TextInput())
     record_type = forms.CharField(widget=forms.TextInput())
     indicator_type = "unknown"
@@ -70,15 +69,16 @@ class SubmissionForm(forms.Form):
         elif record_type == "Historical":
             if self.indicator_type != "other":
                 new_task = group([passive_hosts.s(indicator, "VTO"),
-                              # passive_hosts.s(indicator, "PTO"),
-                              passive_hosts.s(indicator, "IID")])()
+                                  # passive_hosts.s(indicator, "PTO"),
+                                  passive_hosts.s(indicator, "IID")])()
             else:
                 new_task = None
 
         elif record_type == "Malware":
             if self.indicator_type != "other":
                 new_task = group([malware_samples.s(indicator, "TEX"),
-                              malware_samples.s(indicator, "VTO")])()
+                                  malware_samples.s(indicator, "VTO"),
+                                  domain_th.s(indicator)])()
             else:
                 new_task = None
 
