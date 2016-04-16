@@ -241,9 +241,9 @@ def google_safebrowsing(self, indicator):
         print(e)
 
 
-# Task to look up totalhash domain
+# Task to look up totalhash ip or domain search terms
 @app.task(bind=True)
-def domain_th(self, indicator):
+def totalhash_ip_domain_search(self, indicator):
     th_logger = logging.getLogger(None)
     api_id = settings.TOTAL_HASH_API_ID
     api_secret = settings.TOTAL_HASH_SECRET

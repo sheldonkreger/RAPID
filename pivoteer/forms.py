@@ -78,7 +78,7 @@ class SubmissionForm(forms.Form):
             if self.indicator_type != "other":
                 new_task = group([malware_samples.s(indicator, "TEX"),
                                   malware_samples.s(indicator, "VTO"),
-                                  domain_th.s(indicator)])()
+                                  totalhash_ip_domain_search.s(indicator)])()
             else:
                 new_task = None
 
