@@ -28,6 +28,8 @@ class IndicatorManager(models.Manager):
                                              Q(info_date__gte=time_frame),
                                              Q(info__at_domain__exact=indicator) |
                                              Q(info__at_ip__exact=indicator)).values('info', 'info_date')
+        IndicatorManager.LOGGER.info('>>>>SHOW ME THE RECORDS %s', records)
+
         if records:
             return records.latest('info_date')
         IndicatorManager.LOGGER.info("Failed to retrieve ThreatCrowd data for indicator %s" % indicator)
@@ -40,6 +42,7 @@ class IndicatorManager(models.Manager):
         records = self.get_queryset().filter(Q(record_type=record_type),
                                              Q(info_date__gte=time_frame),
                                              Q(info__contains=indicator))
+
         if records:
             IndicatorManager.LOGGER.info(">>>>>>>>>>RECENT_TH RECORDS", records)
             return records.latest('info_date')
@@ -188,7 +191,7 @@ class IndicatorRecord(models.Model):
         ('WIS', 'WHOIS'),
         ('THR', 'ThreatCrowd'),
         ('GSB', 'Google Safe Browsing'),
-        ('THA', 'Total Hash')
+        ('THS', 'Total Hash')
     )
 
     record_type = models.CharField(max_length=2, choices=record_choices)

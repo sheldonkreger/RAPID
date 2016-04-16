@@ -1,20 +1,21 @@
 from __future__ import absolute_import
 
-import datetime, logging, json, ipaddress
+import datetime, logging, json
 import dpath.util
 from collections import OrderedDict
 from django.conf import settings
 from RAPID.celery import app
 from core.threatcrowd import ThreatCrowd
 from core.totalhash import TotalHashApi
-from core.lookups import lookup_ip_whois, lookup_domain_whois, resolve_domain, geolocate_ip, lookup_ip_censys_https, lookup_google_safe_browsing
+from core.lookups import lookup_ip_whois, lookup_domain_whois, resolve_domain, geolocate_ip, lookup_ip_censys_https, \
+    lookup_google_safe_browsing
 from pivoteer.collectors.scrape import RobtexScraper, InternetIdentityScraper
 from pivoteer.collectors.scrape import VirusTotalScraper, ThreatExpertScraper
 from pivoteer.collectors.api import PassiveTotal
 from .models import IndicatorRecord
 
-
 logger = logging.getLogger(None)
+
 
 # Task to look up threatcrowd domain
 @app.task(bind=True)
@@ -35,6 +36,7 @@ def domain_thc(self, domain):
         except Exception as e:
             logger.warn("Error creating or saving TR record: %s" % str(e))
             print(e)
+
 
 # Task to look up threatcrowd ip
 @app.task(bind=True)
@@ -200,6 +202,7 @@ def malware_samples(self, indicator, source):
         except Exception as e:
             print(e)
 
+
 @app.task(bind=True)
 def google_safebrowsing(self, indicator):
     current_time = datetime.datetime.utcnow()
@@ -212,7 +215,7 @@ def google_safebrowsing(self, indicator):
                                        info_date=current_time,
                                        # We store the status code that the Google SafeSearch API returns.
                                        info=OrderedDict({"indicator": indicator,
-                                                        "statusCode": safebrowsing_status,
+                                                         "statusCode": safebrowsing_status,
                                                          "body": safebrowsing_body}))
         record_entry.save()
     except Exception as e:
@@ -222,58 +225,67 @@ def google_safebrowsing(self, indicator):
 # Task to look up totalhash domain
 @app.task(bind=True)
 def domain_th(self, domain):
+    th_logger = logging.getLogger(None)
     api_id = settings.TOTAL_HASH_API_ID
     api_secret = settings.TOTAL_HASH_SECRET
     current_time = datetime.datetime.utcnow()
     th = TotalHashApi(user=api_id, key=api_secret)
-    # query = str.join(':', ("dnsrr", domain))
     query = "dnsrr:" + domain
     res = th.do_search(query)
-    record = th.json_response(res)
+    record = th.json_response(res)  # from totalhash xml response
     record_count = dpath.util.get(json.loads(record), "response/result/numFound")
-    logger = logging.getLogger(None)
-    logger.info(">>>>>>>>>Retrieved Totalhash data for query %s Data: %s" % (query, record))
+
     if int(record_count) > 0:
         try:
-            dict_record = json.loads(record)
-            dict_record['domain'] = domain
-            record_entry = IndicatorRecord(record_type="TH",
-                                           info_source="THS",
-                                           info_date=current_time,
-                                           info=dict_record)
-            logger.info("Created TH record_entry %s" % str(record_entry))
-            record_entry.save()
-            logger.info("TH record saved successfully")
+            raw_record = json.loads(record)
+            # key 'text' contains actual hash
+            hash_list = []
+            for elm in th.scrape_hash(raw_record, 'text'):
+                # link is not using api 'key' & 'user' combination
+                hash_list.append(dict(indicator=domain, hash=elm, link='https://totalhash.cymru.com/analysis/?' + elm))
+
+            th_logger.info("Retrieved Totalhash data for query %s Data: %s" % (query, hash_list))
+
+            # adding to malware records
+            for entry in hash_list:
+                record_entry = IndicatorRecord(record_type="MR",
+                                               info_source="THS",
+                                               info_date=current_time,
+                                               info=OrderedDict({"sha1": entry['hash'],
+                                                                 "indicator": entry['indicator'],
+                                                                 "link": entry['link']}))
+                record_entry.save()
+
+            logger.info("%d TH record_entries saved successfully" % len(hash_list))
         except Exception as e:
             logger.warn("Error creating or saving TH record: %s" % str(e))
             print(e)
     else:
-        logger.info(">>>>>>>>>Totalhash data is not saved because recode count is %s" % record_count)
+        logger.info("No Totalhash data, save aborted")
 
 # Task to look up totalhash ip
-@app.task(bind=True)
-def ip_th(self, ip):
-    try:
-        ipaddress.ip_address(ip)
-        api_id = settings.TOTAL_HASH_API_ID
-        api_secret = settings.TOTAL_HASH_SECRET
-        current_time = datetime.datetime.utcnow()
-        th = TotalHashApi(user=api_id, key=api_secret)
-        query = 'ip:' + ip
-        res = th.do_search(query)
-        record = th.json_response(res)
-        logger = logging.getLogger(None)
-        logger.info("Retrieved Totalhash data for ip %s. Data: %s" % (ip, record))
-        if record:
-            try:
-                record_entry = IndicatorRecord(record_type="TH",
-                                               info_source="THS",
-                                               info_date=current_time,
-                                               info=record)
-                record_entry.save()
-            except Exception as e:
-                print(e)
-    except ValueError:
-        logger.debug("Invalid IP address passed")
-        return
-
+# @app.task(bind=True)
+# def ip_th(self, ip):
+#     try:
+#         ipaddress.ip_address(ip)
+#         api_id = settings.TOTAL_HASH_API_ID
+#         api_secret = settings.TOTAL_HASH_SECRET
+#         current_time = datetime.datetime.utcnow()
+#         th = TotalHashApi(user=api_id, key=api_secret)
+#         query = 'ip:' + ip
+#         res = th.do_search(query)
+#         record = th.json_response(res)
+#         logger = logging.getLogger(None)
+#         logger.info("Retrieved Totalhash data for ip %s. Data: %s" % (ip, record))
+#         if record:
+#             try:
+#                 record_entry = IndicatorRecord(record_type="TH",
+#                                                info_source="THS",
+#                                                info_date=current_time,
+#                                                info=record)
+#                 record_entry.save()
+#             except Exception as e:
+#                 print(e)
+#     except ValueError:
+#         logger.debug("Invalid IP address passed")
+#         return
