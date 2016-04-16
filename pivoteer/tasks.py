@@ -1,4 +1,5 @@
 from __future__ import absolute_import
+from netaddr import *
 
 import datetime, logging, json
 import dpath.util
@@ -242,13 +243,17 @@ def google_safebrowsing(self, indicator):
 
 # Task to look up totalhash domain
 @app.task(bind=True)
-def domain_th(self, domain):
+def domain_th(self, indicator):
     th_logger = logging.getLogger(None)
     api_id = settings.TOTAL_HASH_API_ID
     api_secret = settings.TOTAL_HASH_SECRET
     current_time = datetime.datetime.utcnow()
     th = TotalHashApi(user=api_id, key=api_secret)
-    query = "dnsrr:" + domain
+    if valid_ipv6(indicator) | valid_ipv4(indicator):
+        query = "ip:" + indicator
+    else:
+        query = "dnsrr:" + indicator
+    th_logger.info("Querying Totalhash for %s" % query)
     res = th.do_search(query)
     record = th.json_response(res)  # from totalhash xml response
     record_count = dpath.util.get(json.loads(record), "response/result/numFound")
@@ -260,7 +265,7 @@ def domain_th(self, domain):
             hash_list = []
             for elm in th.scrape_hash(raw_record, 'text'):
                 # link is not using api 'key' & 'user' combination
-                hash_list.append(dict(indicator=domain, hash=elm, link='https://totalhash.cymru.com/analysis/?' + elm))
+                hash_list.append(dict(indicator=indicator, hash=elm, link='https://totalhash.cymru.com/analysis/?' + elm))
 
             th_logger.info("Retrieved Totalhash data for query %s Data: %s" % (query, hash_list))
 
@@ -280,30 +285,3 @@ def domain_th(self, domain):
             print(e)
     else:
         logger.info("No Totalhash data, save aborted")
-
-# Task to look up totalhash ip
-# @app.task(bind=True)
-# def ip_th(self, ip):
-#     try:
-#         ipaddress.ip_address(ip)
-#         api_id = settings.TOTAL_HASH_API_ID
-#         api_secret = settings.TOTAL_HASH_SECRET
-#         current_time = datetime.datetime.utcnow()
-#         th = TotalHashApi(user=api_id, key=api_secret)
-#         query = 'ip:' + ip
-#         res = th.do_search(query)
-#         record = th.json_response(res)
-#         logger = logging.getLogger(None)
-#         logger.info("Retrieved Totalhash data for ip %s. Data: %s" % (ip, record))
-#         if record:
-#             try:
-#                 record_entry = IndicatorRecord(record_type="TH",
-#                                                info_source="THS",
-#                                                info_date=current_time,
-#                                                info=record)
-#                 record_entry.save()
-#             except Exception as e:
-#                 print(e)
-#     except ValueError:
-#         logger.debug("Invalid IP address passed")
-#         return
