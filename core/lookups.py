@@ -1,3 +1,4 @@
+import unittest
 import os
 import logging
 import tldextract
@@ -9,6 +10,7 @@ from ipwhois import IPWhois
 from collections import OrderedDict
 from ipwhois.ipwhois import IPDefinedError
 from censys.ipv4 import CensysIPv4
+from censys.certificates import CensysCertificates
 from censys.base import CensysException
 from django.conf import settings
 
@@ -17,6 +19,7 @@ current_directory = os.path.dirname(__file__)
 
 
 def geolocate_ip(ip):
+
     geolocation_database = os.path.join(current_directory, 'GeoLite2-City.mmdb')
     reader = geoip2.database.Reader(geolocation_database)
 
@@ -42,6 +45,7 @@ def geolocate_ip(ip):
 
 
 def resolve_domain(domain):
+
     # Set resolver to Google openDNS servers
     resolver = dns.resolver.Resolver()
     resolver.nameservers = ['8.8.8.8', '8.8.4.4']
@@ -70,6 +74,7 @@ def resolve_domain(domain):
 
 
 def lookup_domain_whois(domain):
+
     # Extract base domain name for lookup
     ext = tldextract.extract(domain)
     delimiter = "."
@@ -90,6 +95,7 @@ def lookup_domain_whois(domain):
 
 
 def lookup_ip_whois(ip):
+
     try:
         # Retrieve parsed record
         record = IPWhois(ip).lookup()
@@ -107,7 +113,6 @@ def lookup_ip_whois(ip):
         logger.error("Unexpected error %s" % unexpected_error)
 
     return None
-
 
 # See docs: https://developers.google.com/safe-browsing/lookup_guide#HTTPGETRequest
 
@@ -146,9 +151,28 @@ def lookup_ip_censys_https(ip):
         ip_data = CensysIPv4(api_id=api_id, api_secret=api_secret).view(ip)
         return ip_data['443']['https']['tls']['certificate']['parsed']
     except KeyError:
-        return {'status': 404, 'message': "No HTTPS certificate data was found for IP " + ip}
+        return {'status':404,'message':"No HTTPS certificate data was found for IP " + ip}
     except CensysException as ce:
-        return {'status': ce.status_code, 'message': ce.message}
+        return {'status':ce.status_code,'message':ce.message}
 
+def lookup_certs_censys(other, count):
+    api_id = settings.CENSYS_API_ID
+    api_secret = settings.CENSYS_API_SECRET
 
-
+    try:
+        cc = CensysCertificates(api_id=api_id, api_secret=api_secret)
+        generator = cc.search(other)
+        i = 0
+        results = {'records':[]}
+        for record in generator:
+            if i == 0:
+                results['total'] = generator.gi_frame.f_locals['payload']['metadata']['count']
+            for sha256 in record['parsed.fingerprint_sha256']:
+                results['records'].append(cc.view(sha256))
+                i+=1
+            if i >= count:
+                break
+        results['count'] = i
+        return results
+    except CensysException as ce:
+        return {'status':ce.status_code,'message':ce.message}

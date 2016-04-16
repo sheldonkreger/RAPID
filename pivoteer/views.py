@@ -107,6 +107,9 @@ class CheckTask(LoginRequiredMixin, View):
             # Current ThreatCrowd record
             tc_info = IndicatorRecord.objects.recent_tc(indicator)
             self.template_vars["tc_info"] = tc_info
+            
+            cert_info = IndicatorRecord.objects.recent_cert(indicator)
+            self.template_vars["cert_info"] = cert_info
 
         elif record_type == "Historical":
 
@@ -134,11 +137,8 @@ class CheckTask(LoginRequiredMixin, View):
 
             safebrowsing_records = IndicatorRecord.objects.safebrowsing_record(indicator)
             self.template_name = "pivoteer/Google.html"
-
-            # safesearch_records = IndicatorRecord.objects.safesearch_records(indicator)
-            # self.template_vars["safesearch_records"] = safesearch_records
-
             self.template_vars["records"] = safebrowsing_records
+            self.template_vars["google_url"] = "https://www.google.com/transparencyreport/safebrowsing/diagnostic/?hl=en#url=" + indicator
 
             self.template_vars["origin"] = indicator
 

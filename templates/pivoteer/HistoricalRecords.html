@@ -8,6 +8,7 @@
             <th>Resolution Date</th>
             <th>Domain</th>
             <th>IP Address</th>
+            <th>Country</th>
             <th>Source</th>
           </tr>
         </thead>
@@ -30,6 +31,9 @@
                             {{ record.info.ip }}
                         {% endif %}
                     </td>
+                <td>
+                    {{ record.info.geo_location.country }}
+                </td>
                     <td>{{ record.get_info_source_display }}</td>
                 </tr>
             {% endfor %}

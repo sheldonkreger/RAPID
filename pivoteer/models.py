@@ -10,6 +10,7 @@ from core.utilities import check_domain_valid, get_base_domain
 
 
 class IndicatorManager(models.Manager):
+
     LOGGER = logging.getLogger(__name__)
 
     def host_records(self, indicator):
@@ -20,6 +21,18 @@ class IndicatorManager(models.Manager):
                                              Q(info__at_ip__endswith=indicator))
         return records
 
+    def recent_cert(self, indicator):
+        record_type = 'CE'
+        time_frame = datetime.datetime.utcnow() + datetime.timedelta(hours=-24)
+
+        records = self.get_queryset().filter(Q(record_type=record_type),
+                                             Q(info_date__gte=time_frame),
+                                             Q(info__at_indicator__exact=indicator)).values('info', 'info_date')
+        if records:
+            return records.latest('info_date')
+        IndicatorManager.LOGGER.info("Failed to retrieve certificate data for indicator %s" % indicator)
+        return records
+
     def recent_tc(self, indicator):
         record_type = 'TR'
         time_frame = datetime.datetime.utcnow() + datetime.timedelta(hours=-24)
@@ -28,25 +41,9 @@ class IndicatorManager(models.Manager):
                                              Q(info_date__gte=time_frame),
                                              Q(info__at_domain__exact=indicator) |
                                              Q(info__at_ip__exact=indicator)).values('info', 'info_date')
-        IndicatorManager.LOGGER.info('>>>>SHOW ME THE RECORDS %s', records)
-
         if records:
             return records.latest('info_date')
         IndicatorManager.LOGGER.info("Failed to retrieve ThreatCrowd data for indicator %s" % indicator)
-        return records
-
-    def recent_th(self, indicator):
-        record_type = 'TH'
-        time_frame = datetime.datetime.utcnow() + datetime.timedelta(hours=-24)
-
-        records = self.get_queryset().filter(Q(record_type=record_type),
-                                             Q(info_date__gte=time_frame),
-                                             Q(info__contains=indicator))
-
-        if records:
-            IndicatorManager.LOGGER.info(">>>>>>>>>>RECENT_TH RECORDS", records)
-            return records.latest('info_date')
-        IndicatorManager.LOGGER.info("Failed to retrieve TotalHash data for indicator %s" % indicator)
         return records
 
     def recent_hosts(self, indicator):
@@ -110,8 +107,8 @@ class IndicatorManager(models.Manager):
             indicator = get_base_domain(indicator)
 
         records = self.get_queryset().filter(Q(record_type=record_type),
-                                             Q(info__at_query__endswith=indicator) |
-                                             Q(info__at_domain_name__endswith=indicator)).values('info', 'info_date')
+                                            Q(info__at_query__endswith=indicator) |
+                                            Q(info__at_domain_name__endswith=indicator)).values('info', 'info_date')
         return records
 
     def recent_whois(self, indicator):
@@ -161,24 +158,20 @@ class IndicatorManager(models.Manager):
 
     def safebrowsing_record(self, indicator):
         record_type = 'SB'
-        # time_frame = datetime.datetime.utcnow() + datetime.timedelta(hours=-24)
-        if check_domain_valid(indicator):
-            records = self.get_queryset().filter(Q(record_type=record_type),
-                                                 # Q(info_date__lt=time_frame),
-                                                 Q(info__at_indicator__exact=indicator))
-                                                     # Q(info__at_domain_name__endswith=indicator)).values('info_hash',
-                                                     #                                                    'info_date')
-        # records = 'foobar-records'
+        records = self.get_queryset().filter(Q(record_type=record_type),
+                                             Q(info__at_indicator__exact=indicator))
         return records
 
 
 class IndicatorRecord(models.Model):
+
     record_choices = (
         ('HR', 'Host Record'),
         ('MR', 'Malware Record'),
         ('WR', 'Whois Record'),
         ('TR', 'ThreatCrowd Record'),
         ('SB', 'SafeBrowsing Record'),
+        ('CE', 'Censys Record')
     )
 
     source_choices = (
@@ -192,6 +185,7 @@ class IndicatorRecord(models.Model):
         ('THR', 'ThreatCrowd'),
         ('GSB', 'Google Safe Browsing'),
         ('THS', 'Total Hash')
+        ('CEN', "Censys.io")
     )
 
     record_type = models.CharField(max_length=2, choices=record_choices)
@@ -214,6 +208,7 @@ class IndicatorRecord(models.Model):
         return info_sha1
 
     def save(self, *args, **kwargs):
+
         if not self.info_hash:
             self.info_hash = self.generate_hash()
 
@@ -235,3 +230,4 @@ class ExternalSessions(models.Model):
 
     service = models.CharField(max_length=3, choices=service_choices)
     cookie = JsonField()
+
