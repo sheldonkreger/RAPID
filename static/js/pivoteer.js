@@ -220,6 +220,6 @@ $("#export").on( "click", "a", function(event) {
     var link = $(this);
     var linkURL = link.attr("href");
     var current_pivot = $("#pivot_navigator").find("li").last().find("span").text();
-    var fullURL = linkURL + "?indicator=" + current_pivot;
+    var fullURL = linkURL + "&indicator=" + current_pivot;
     window.open(fullURL);
 });
