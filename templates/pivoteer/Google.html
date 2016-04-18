@@ -1,21 +1,19 @@
 <h3>Google SafeBrowsing</h3>
-
-    <table id="SB_table" class="table display">
-        <thead>
-            <tr>
-                <th>Submission Date</th>
-                <th>SafeBrowsing HTTP Code</th>
-                <th>SafeBrowsing API Response Body</th>
-            </tr>
-        {% for record in records %}
-          <tr>
-
+<a target="_blank" href="{{ google_url }}">View current report on Google's site.</a>
+<table id="SB_table" class="table display">
+    <thead>
+    <tr>
+        <th>Submission Date</th>
+        <th>SafeBrowsing API Response</th>
+    </tr>
+    </thead>
+    <tbody>
+    {% for record in records %}
+        <tr>
             <th>{{ record.info_date }}</th>
-            <th>{{ record.info.statusCode }}</th>
             <th>{{ record.info.body }}</th>
-          </tr>
-        {%  endfor %}
-        </thead>
+        </tr>
+    {%  endfor %}
 
-        <tbody>
-    </table>
+    </tbody>
+</table>

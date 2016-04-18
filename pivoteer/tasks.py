@@ -1,11 +1,15 @@
 from __future__ import absolute_import
+from netaddr import *
 
 import datetime, logging, json
+import dpath.util
 from collections import OrderedDict
 from django.conf import settings
 from RAPID.celery import app
 from core.threatcrowd import ThreatCrowd
-from core.lookups import lookup_ip_whois, lookup_domain_whois, resolve_domain, geolocate_ip, lookup_ip_censys_https, lookup_google_safe_browsing, lookup_certs_censys
+from core.totalhash import TotalHashApi
+from core.lookups import lookup_ip_whois, lookup_domain_whois, resolve_domain, geolocate_ip, lookup_ip_censys_https, \
+    lookup_google_safe_browsing, lookup_certs_censys
 from pivoteer.collectors.scrape import RobtexScraper, InternetIdentityScraper
 from pivoteer.collectors.scrape import VirusTotalScraper, ThreatExpertScraper
 from pivoteer.collectors.api import PassiveTotal
@@ -13,22 +17,24 @@ from .models import IndicatorRecord
 
 logger = logging.getLogger(None)
 
+
 @app.task(bind=True)
 def certificate_cen(self, indicator):
-	current_time = datetime.datetime.utcnow()
-	record = lookup_certs_censys(indicator, 25)
-	record['indicator'] = indicator
-	logger.info("Retrieved Censys.io search results for indicator %s" % indicator)
-	if record:
-		try:
-			record_entry = IndicatorRecord(record_type="CE",
-											info_source="CEN",
-											info_date=current_time,
-											info=record)
-			record_entry.save()
-			logger.info("CE record saved successfully")
-		except Exception as e:
-			logger.warn("Error creating or saving CE record: %s" % str(e))
+    current_time = datetime.datetime.utcnow()
+    record = lookup_certs_censys(indicator, 25)
+    record['indicator'] = indicator
+    logger.info("Retrieved Censys.io search results for indicator %s" % indicator)
+    if record:
+        try:
+            record_entry = IndicatorRecord(record_type="CE",
+                                           info_source="CEN",
+                                           info_date=current_time,
+                                           info=record)
+            record_entry.save()
+            logger.info("CE record saved successfully")
+        except Exception as e:
+            logger.warn("Error creating or saving CE record: %s" % str(e))
+
 
 # Task to look up threatcrowd domain
 @app.task(bind=True)
@@ -40,15 +46,16 @@ def domain_thc(self, domain):
     if record:
         try:
             record_entry = IndicatorRecord(record_type="TR",
-                                            info_source="THR",
-                                            info_date=current_time,
-                                            info=record)
+                                           info_source="THR",
+                                           info_date=current_time,
+                                           info=record)
             logger.info("Created TR record_entry %s" % str(record_entry))
             record_entry.save()
             logger.info("TR record saved successfully")
         except Exception as e:
             logger.warn("Error creating or saving TR record: %s" % str(e))
             print(e)
+
 
 # Task to look up threatcrowd ip
 @app.task(bind=True)
@@ -59,12 +66,13 @@ def ip_thc(self, ip):
     if record:
         try:
             record_entry = IndicatorRecord(record_type="TR",
-                                            info_source="THR",
-                                            info_date=current_time,
-                                            info=record)
+                                           info_source="THR",
+                                           info_date=current_time,
+                                           info=record)
             record_entry.save()
         except Exception as e:
             print(e)
+
 
 @app.task(bind=True)
 def domain_whois(self, domain):
@@ -90,7 +98,6 @@ def domain_whois(self, domain):
 
 @app.task(bind=True)
 def ip_whois(self, ip_address):
-
     current_time = datetime.datetime.utcnow()
     record = lookup_ip_whois(ip_address)
 
@@ -114,7 +121,6 @@ def ip_whois(self, ip_address):
 
 @app.task(bind=True)
 def domain_hosts(self, domain):
-
     current_time = datetime.datetime.utcnow()
     hosts = resolve_domain(domain)
 
@@ -138,7 +144,6 @@ def domain_hosts(self, domain):
 
 @app.task(bind=True)
 def ip_hosts(self, ip_address):
-
     current_time = datetime.datetime.utcnow()
     scraper = RobtexScraper()
     hosts = scraper.run(ip_address)
@@ -158,9 +163,9 @@ def ip_hosts(self, ip_address):
             except Exception as e:
                 print(e)
 
+
 @app.task(bind=True)
 def passive_hosts(self, indicator, source):
-
     if source == "IID":
         scraper = InternetIdentityScraper()
         passive = scraper.run(indicator)  # returns table of data rows {ip, domain, date, ip_location}
@@ -191,10 +196,9 @@ def passive_hosts(self, indicator, source):
 
 @app.task(bind=True)
 def malware_samples(self, indicator, source):
-
     if source == "VTO":
         scraper = VirusTotalScraper()
-        malware = scraper.get_malware(indicator) #
+        malware = scraper.get_malware(indicator)  #
 
     elif source == "TEX":
         scraper = ThreatExpertScraper()
@@ -217,6 +221,7 @@ def malware_samples(self, indicator, source):
         except Exception as e:
             print(e)
 
+
 @app.task(bind=True)
 def google_safebrowsing(self, indicator):
     current_time = datetime.datetime.utcnow()
@@ -229,8 +234,50 @@ def google_safebrowsing(self, indicator):
                                        info_date=current_time,
                                        # We store the status code that the Google SafeSearch API returns.
                                        info=OrderedDict({"indicator": indicator,
-                                                        "statusCode": safebrowsing_status,
+                                                         "statusCode": safebrowsing_status,
                                                          "body": safebrowsing_body}))
         record_entry.save()
     except Exception as e:
         print(e)
+
+
+# Task to look up totalhash ip or domain search terms
+@app.task(bind=True)
+def totalhash_ip_domain_search(self, indicator):
+    th_logger = logging.getLogger(None)
+    api_id = settings.TOTAL_HASH_API_ID
+    api_secret = settings.TOTAL_HASH_SECRET
+    current_time = datetime.datetime.utcnow()
+    th = TotalHashApi(user=api_id, key=api_secret)
+    if valid_ipv6(indicator) or valid_ipv4(indicator):
+        query = "ip:" + indicator
+    else:
+        query = "dnsrr:" + indicator
+    th_logger.info("Querying Totalhash for %s" % query)
+    res = th.do_search(query)
+    record = th.json_response(res)  # from totalhash xml response
+    record_count = dpath.util.get(json.loads(record), "response/result/numFound")
+
+    if int(record_count) > 0:
+        try:
+            raw_record = json.loads(record)
+
+            th_logger.info("Retrieved Totalhash data for query %s Data: %s" % (query, raw_record))
+
+            # adding to malware records, # key 'text' contains actual hash
+            for entry in th.scrape_hash(raw_record, 'text'):
+                hash_link = "https://totalhash.cymru.com/analysis/?" + entry
+                record_entry = IndicatorRecord(record_type="MR",
+                                               info_source="THS",
+                                               info_date=current_time,
+                                               info=OrderedDict({"sha1": entry,
+                                                                 "indicator": indicator,
+                                                                 "link": hash_link}))
+                record_entry.save()
+
+            logger.info("%s TH record_entries saved successfully" % record_count)
+        except Exception as e:
+            logger.warn("Error creating or saving TH record: %s" % str(e))
+            print(e)
+    else:
+        logger.info("No Totalhash data, save aborted")

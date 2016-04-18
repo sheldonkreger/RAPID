@@ -24,7 +24,7 @@ class IndicatorManager(models.Manager):
     def recent_cert(self, indicator):
         record_type = 'CE'
         time_frame = datetime.datetime.utcnow() + datetime.timedelta(hours=-24)
-        
+
         records = self.get_queryset().filter(Q(record_type=record_type),
                                              Q(info_date__gte=time_frame),
                                              Q(info__at_indicator__exact=indicator)).values('info', 'info_date')
@@ -158,9 +158,8 @@ class IndicatorManager(models.Manager):
 
     def safebrowsing_record(self, indicator):
         record_type = 'SB'
-        
         records = self.get_queryset().filter(Q(record_type=record_type),
-                                                 Q(info__at_indicator__exact=indicator))
+                                             Q(info__at_indicator__exact=indicator))
         return records
 
 
@@ -185,6 +184,7 @@ class IndicatorRecord(models.Model):
         ('WIS', 'WHOIS'),
         ('THR', 'ThreatCrowd'),
         ('GSB', 'Google Safe Browsing'),
+        ('THS', 'Total Hash'),
         ('CEN', "Censys.io")
     )
 
