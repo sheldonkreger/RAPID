@@ -249,7 +249,7 @@ def totalhash_ip_domain_search(self, indicator):
     api_secret = settings.TOTAL_HASH_SECRET
     current_time = datetime.datetime.utcnow()
     th = TotalHashApi(user=api_id, key=api_secret)
-    if valid_ipv6(indicator) | valid_ipv4(indicator):
+    if valid_ipv6(indicator) or valid_ipv4(indicator):
         query = "ip:" + indicator
     else:
         query = "dnsrr:" + indicator
