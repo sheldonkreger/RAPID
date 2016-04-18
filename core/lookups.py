@@ -5,11 +5,8 @@ import tldextract
 import pythonwhois
 import dns.resolver
 import geoip2.database
-<<<<<<< HEAD
-import google
-=======
+import core.google
 import urllib.request
->>>>>>> upstream/master
 from ipwhois import IPWhois
 from collections import OrderedDict
 from ipwhois.ipwhois import IPDefinedError
@@ -17,7 +14,7 @@ from censys.ipv4 import CensysIPv4
 from censys.certificates import CensysCertificates
 from censys.base import CensysException
 from django.conf import settings
-from urllib.parse import urlparse
+
 
 logger = logging.getLogger(__name__)
 current_directory = os.path.dirname(__file__)
@@ -162,49 +159,40 @@ def lookup_ip_censys_https(ip):
         return {'status': ce.status_code, 'message': ce.message}
 
 
-def search_for_domain(domain, limit=10):
-    """Find the top 'limit' Google search results for 'domain' (excluding those from 'domain' itself)."""
-    logger.debug("Searching Google for domain '%s' (limit: %d)", domain, limit)
-    parameter = "\"" + domain + "\""
+def google_for_indicator(indicator, limit=10, domain=None):
+    """
+    Find the top 'limit' Google search results for 'indicator' (excluding those from 'domain').
+
+    Note: The domain will be wrapped in quotes before being submitted to Google.  It should therefore NOT be so wrapped
+    when passed to this function.
+
+    This method will also filter any results to ensure that none of the URLs returned actually point to the given domain
+    (or any subdomain thereof).   In this manner, if you search for "domain.com," results such as
+    "http://domain.com/page.html" and "http://sub.domain.com/file.pdf" will NOT be included in the results.
+
+    :param indicator: The indicator value for which to search.  This should NOT be wrapped in quotation marks.
+    :param limit: The maximum number of search results to return (optional, default: 10)
+    :param domain: A domain from which results should be excluded
+    :return: A list containing the URLs of the search results, in the order returned by Google
+    """
+    logger.debug("Searching Google for indicator '%s' (limit: %d)", indicator, limit)
+    parameter = "\"" + indicator + "\""
+
+    if domain is None:
+        sifter = core.google.KeepSifter()
+    else:
+        sifter = core.google.DomainSifter(domain)
     result = list()
-
-    # We actually need to filter our results to ensure that we are NOT including results from the actual domain being
-    # queried.  As a result, it might be necessary to query Google multiple times.  We will attempt to reduce this by
-    # asking Google for three times the number of requested results.  (On the one hand, we don't want to ask Google too
-    # frequently lest we be blocked.  On the other hand, we don't want excess results lest we waste time filtering.)
-    num = limit * 3
-    start = 0
-    stop = limit
     try:
-        while True:
-            logger.debug("Checking Google (start: %d, stop: %d, num: %d)", start, stop, num)
-            urls = list(google.search(parameter, num=num, start=start, stop=stop))
-            logger.debug("Google results: %s", urls)
-            if not urls:
-                logger.warn("Only %d Google results were found for domain '%s' (requested %d)",
-                            len(result),
-                            domain,
-                            limit)
-                break
-            result += [url for url in urls if not urlparse(url).netloc.endswith(domain)]
-            logger.debug("Updated results: %s", result)
-
-            # It's possible that we could end up with more results than requested, in which case we need to take only
-            # the top 'limit' results.
-            if len(result) >= limit:
-                logger.debug("Maximum requested results met or exceeded (requested: %d, found %d)", limit, len(result))
-                result = result[:limit]
-                break
-
-            start = stop
-            stop += limit
-
+        for info in core.google.search(parameter, limit=limit, sifter=sifter):
+            result.append(info.to_dict())
     except Exception:
-        # Something went wrong, most likely while querying Google.  There's nothing we can really do about it, so we
-        # will log the error and return our list as-is (which is probably empty)
-        logger.exception("Unexpected error performing google search")
+        # Something went wrong, most likely when querying Google.  There's nothing we can really do about it, so we will
+        # log the error and return an empty list
+        logger.exception("Unexpected error performing Google search")
+        result = list()
 
-    logger.debug("Found top %d/%d search results for domain '%s': %s", len(result), limit, domain, result)
+    logger.info("Found top %d/%d search results for indicator '%s': %s", len(result), limit, indicator, result)
     return result
 
 
