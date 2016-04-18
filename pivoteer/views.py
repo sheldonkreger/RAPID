@@ -1,6 +1,9 @@
 import csv
 import json
 import datetime
+import logging
+
+import core.google
 
 from django.http import HttpResponse
 from django.shortcuts import render
@@ -13,6 +16,9 @@ from core.utilities import time_jump
 
 from celery.result import GroupResult
 from braces.views import LoginRequiredMixin
+
+
+LOGGER = logging.getLogger(__name__)
 
 
 class PivotManager(LoginRequiredMixin, View):
@@ -164,6 +170,7 @@ class ExportRecords(LoginRequiredMixin, View):
     def get(self, request):
         indicator = request.GET.get('indicator', '')
         filtering = request.GET.get('filter', '')
+        LOGGER.debug("EXPORTING '%s' with filter: %s", indicator, filtering)
 
         if indicator and filtering == '':
             self.export_recent(indicator)
@@ -245,16 +252,32 @@ class ExportRecords(LoginRequiredMixin, View):
         """
         Export Search Results.
 
+        This will produce a CSV file containing three columns:
+            title: The title of the search result
+            url: The URL of the search result
+            content: A brief summary of the content of the result
+
         :param indicator: The indicator whose search results are to be exported
         :return: This method does not return any values
         """
         records = IndicatorRecord.objects.get_search_records(indicator)
+        LOGGER.debug("Found %d record(s) for export", len(records))
         if records:
             self.line_separator()
             self.writer.writerow(["Title", "URL", "Content"])
+            number = 0
             for record in records:
-                entry = [record.info.title, record.info.url, record.info.content]
-                self.writer.writerow(entry)
+                number += 1
+                info = record['info']
+                results = info['results']
+                LOGGER.debug("Found %d result(s) in record #%d", len(results), number)
+                for result in results:
+                    LOGGER.debug("Processing result: %s", result)
+                    url = result[core.google.SearchResult.URL]
+                    title = result[core.google.SearchResult.TITLE]
+                    content = result[core.google.SearchResult.CONTENT]
+                    entry = [title, url, content]
+                    self.writer.writerow(entry)
 
     def line_separator(self):
         self.writer.writerow([])
