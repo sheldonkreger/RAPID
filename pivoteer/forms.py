@@ -88,6 +88,9 @@ class SubmissionForm(forms.Form):
             else:
                 new_task = None
 
+        elif record_type == "Search":
+            new_task = group([make_indicator_search_records.s(indicator, self.indicator_type)])()
+
         else:
             new_task = None
 

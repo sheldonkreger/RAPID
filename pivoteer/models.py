@@ -162,6 +162,23 @@ class IndicatorManager(models.Manager):
                                              Q(info__at_indicator__exact=indicator))
         return records
 
+    def get_search_records(self, indicator):
+        """
+        Retrieve any search records from within the last 24 hours for an indicator from the database.
+
+        :param indicator: The indicator value
+        :return:  The search records for the indicator
+        """
+        record_type = 'SR'
+        time_frame = datetime.datetime.utcnow() + datetime.timedelta(hours=-24)
+        value = indicator
+        if check_domain_valid(indicator):
+            value = get_base_domain(indicator)
+        IndicatorManager.LOGGER.debug("Using search value: %s", value)
+        return self.get_queryset().filter(Q(record_type=record_type),
+                                          Q(info_date__gte=time_frame),
+                                          Q(info__at_indicator__exact=value)).values('info', 'info_date')
+
 
 class IndicatorRecord(models.Model):
 
@@ -171,7 +188,8 @@ class IndicatorRecord(models.Model):
         ('WR', 'Whois Record'),
         ('TR', 'ThreatCrowd Record'),
         ('SB', 'SafeBrowsing Record'),
-        ('CE', 'Censys Record')
+        ('CE', 'Censys Record'),
+        ('SR', 'Search Record')
     )
 
     source_choices = (
@@ -185,7 +203,8 @@ class IndicatorRecord(models.Model):
         ('THR', 'ThreatCrowd'),
         ('GSB', 'Google Safe Browsing'),
         ('THS', 'Total Hash'),
-        ('CEN', "Censys.io")
+        ('CEN', "Censys.io"),
+        ('GSE', 'Google Search Engine')
     )
 
     record_type = models.CharField(max_length=2, choices=record_choices)

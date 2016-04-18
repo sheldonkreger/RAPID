@@ -132,7 +132,6 @@ class CheckTask(LoginRequiredMixin, View):
 
             self.template_vars["origin"] = indicator
 
-
         elif record_type == "SafeBrowsing":
 
             safebrowsing_records = IndicatorRecord.objects.safebrowsing_record(indicator)
@@ -141,6 +140,11 @@ class CheckTask(LoginRequiredMixin, View):
             self.template_vars["google_url"] = "https://www.google.com/transparencyreport/safebrowsing/diagnostic/?hl=en#url=" + indicator
 
             self.template_vars["origin"] = indicator
+
+        elif record_type == "Search":
+            self.template_name = "pivoteer/SearchRecords.html"
+            search_records = IndicatorRecord.objects.get_search_records(indicator)
+            self.template_vars["search_records"] = search_records
 
         return render(request, self.template_name, self.template_vars)
 
@@ -174,6 +178,9 @@ class ExportRecords(LoginRequiredMixin, View):
 
         elif indicator and filtering == 'malware':
             self.export_malware(indicator)
+
+        elif indicator and filtering == 'search':
+            self.export_search_records(indicator)
 
         return self.response
 
@@ -232,6 +239,21 @@ class ExportRecords(LoginRequiredMixin, View):
                 entry = [record.info_date, record.info_source, record.info['indicator'], record.info['md5'],
                          record.info['sha1'], record.info['sha256'], record.info['link']]
 
+                self.writer.writerow(entry)
+
+    def export_search_records(self, indicator):
+        """
+        Export Search Results.
+
+        :param indicator: The indicator whose search results are to be exported
+        :return: This method does not return any values
+        """
+        records = IndicatorRecord.objects.get_search_records(indicator)
+        if records:
+            self.line_separator()
+            self.writer.writerow(["Title", "URL", "Content"])
+            for record in records:
+                entry = [record.info.title, record.info.url, record.info.content]
                 self.writer.writerow(entry)
 
     def line_separator(self):
