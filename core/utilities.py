@@ -64,8 +64,8 @@ def discover_type(submission):
     if check_ip_valid(submission):
         return "ip"
 
-    elif check_email_valid(submission):
-        return "email"
+    #elif check_email_valid(submission):
+    #    return "email"
 
     elif check_domain_valid(submission):
         return "domain"
