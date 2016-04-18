@@ -132,12 +132,15 @@ class CheckTask(LoginRequiredMixin, View):
 
             self.template_vars["origin"] = indicator
 
+
         elif record_type == "SafeBrowsing":
 
             safebrowsing_records = IndicatorRecord.objects.safebrowsing_record(indicator)
             self.template_name = "pivoteer/Google.html"
             self.template_vars["records"] = safebrowsing_records
             self.template_vars["google_url"] = "https://www.google.com/transparencyreport/safebrowsing/diagnostic/?hl=en#url=" + indicator
+
+            self.template_vars["origin"] = indicator
 
         return render(request, self.template_name, self.template_vars)
 
