@@ -406,7 +406,6 @@ def filter_result(link):
         # Include interstitial ad sites (which may be malicious).  (Note: This is a change from the original
         # implementation of 'filter_link.')
         if link.startswith("/interstitial?"):
-            LOGGER.info("Dictionary: %s", parse_qs(o.query))
             link = parse_qs(o.query)["url"][0]
             o = urlparse(link, "http")
             if o.netloc and 'google' not in o.netloc:
@@ -447,7 +446,7 @@ def _call_google_html(value, start=0, limit=10, **kwargs):
         raw_url = a.attrs["href"]
         url = filter_result(raw_url)
         if url is None:
-            LOGGER.debug("Discarding filtered URL: %s", raw_url)
+            LOGGER.info("Discarding filtered URL: %s", raw_url)
             continue
         title = a.get_text()
         s = g.find("div", {"class": "s"})
