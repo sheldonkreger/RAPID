@@ -13,7 +13,7 @@ from django.core.exceptions import ObjectDoesNotExist, MultipleObjectsReturned
 from .forms import SubmissionForm
 from .models import IndicatorRecord, TaskTracker
 from core.utilities import time_jump
-
+from core.lookups import geolocate_ip, resolve_domain
 from celery.result import GroupResult
 from braces.views import LoginRequiredMixin
 
@@ -104,7 +104,16 @@ class CheckTask(LoginRequiredMixin, View):
 
             # Current hosting records
             host_record = IndicatorRecord.objects.recent_hosts(indicator)
-            self.template_vars["current_hosts"] = host_record
+
+            # We must lookup the country for each IP address for use in the template.
+            # We do this outside the task because we don't know the IP addresses until the task completes.
+            host_records_complete = []
+            for record in host_record:
+                info = getattr(record, 'info')
+                record.location = geolocate_ip(info['ip'])
+                host_records_complete.append(record)
+
+            self.template_vars["current_hosts"] = host_records_complete
 
             # Current WHOIS record
             whois_record = IndicatorRecord.objects.recent_whois(indicator)
@@ -117,13 +126,24 @@ class CheckTask(LoginRequiredMixin, View):
             cert_info = IndicatorRecord.objects.recent_cert(indicator)
             self.template_vars["cert_info"] = cert_info
 
+
+
         elif record_type == "Historical":
 
             self.template_name = "pivoteer/HistoricalRecords.html"
 
             # Historical hosting records
             host_records = IndicatorRecord.objects.historical_hosts(indicator, request)
-            self.template_vars["hosting_records"] = host_records
+
+            # We must lookup the country for each IP address for use in the template.
+            # We do this outside the task because we don't know the IP addresses until the task completes.
+            host_records_complete = []
+            for record in host_records:
+                info = getattr(record, 'info')
+                record.location = geolocate_ip(info['ip'])
+                host_records_complete.append(record)
+
+            self.template_vars["hosting_records"] = host_records_complete
 
             # Historical WHOIS records
             whois_record = IndicatorRecord.objects.historical_whois(indicator)
