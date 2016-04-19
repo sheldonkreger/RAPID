@@ -176,6 +176,7 @@ class ExportRecords(LoginRequiredMixin, View):
             self.export_recent(indicator)
             self.export_historical(indicator, request)
             self.export_malware(indicator)
+            self.export_search_records(indicator)
 
         elif indicator and filtering == 'recent':
             self.export_recent(indicator)
