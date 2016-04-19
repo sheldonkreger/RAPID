@@ -20,7 +20,7 @@ psycopg2==2.5.4
 pythonwhois==2.4.3
 python-dateutil==2.4.0
 pytz==2014.9
-robobrowser==0.5.1
+robobrowser==0.5.2
 SQLAlchemy==0.9.8
 tldextract==1.5.1
 Unipath==1.1
@@ -28,3 +28,4 @@ werkzeug==0.9.6
 xmltodict==0.10.1
 dpath==1.4.0
 netaddr==0.7.18
+

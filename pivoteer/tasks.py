@@ -9,7 +9,7 @@ from RAPID.celery import app
 from core.threatcrowd import ThreatCrowd
 from core.totalhash import TotalHashApi
 from core.lookups import lookup_ip_whois, lookup_domain_whois, resolve_domain, geolocate_ip, lookup_ip_censys_https, \
-    lookup_google_safe_browsing, lookup_certs_censys
+    lookup_google_safe_browsing, lookup_certs_censys, google_for_indicator
 from pivoteer.collectors.scrape import RobtexScraper, InternetIdentityScraper
 from pivoteer.collectors.scrape import VirusTotalScraper, ThreatExpertScraper
 from pivoteer.collectors.api import PassiveTotal
@@ -281,3 +281,37 @@ def totalhash_ip_domain_search(self, indicator):
             print(e)
     else:
         logger.info("No Totalhash data, save aborted")
+
+
+@app.task
+def make_indicator_search_records(indicator, indicator_type):
+    """
+    A Celery task for searching Google for an indicator.
+
+    If the indicator is a domain, results from the domain itself will be xcluded.
+
+    This task creates an indicator record of type 'SR' (Search Result) and a source of 'GSE' (Google Search Engine).
+    The record will have the current time associated with it.  Ther ecord data is an ordered mapping containing three
+    keys:
+        indicator: The indicator value
+        indicator_type: The indicator type
+        results: A list of SearchResult dictionary objects.  The order of this list should be the order in which results
+                 were returned by Google.   Please refer to the documentation for core.google.SearchResult for a
+                 description of these objects.
+
+    :param indicator: The indicator being processed
+    :param indicator_type: The type of the indicator
+    :return: This method does not return any values
+    """
+    try:
+        current_time = datetime.datetime.utcnow()
+        domain = indicator if indicator_type == 'domain' else None
+        results = google_for_indicator(indicator, domain=domain)
+        record_entry = IndicatorRecord(record_type="SR",
+                                       info_source="GSE",
+                                       info_date=current_time,
+                                       info=OrderedDict({"indicator": indicator,
+                                                         "results": results}))
+        record_entry.save()
+    except Exception:
+        logger.exception("Error retrieving/saving Google search results for domain")
