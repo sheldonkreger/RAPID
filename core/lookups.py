@@ -191,8 +191,14 @@ def google_for_indicator(indicator, limit=10, domain=None):
         # log the error and return an empty list
         logger.exception("Unexpected error performing Google search")
         result = list()
-
-    logger.info("Found top %d/%d search results for indicator '%s': %s", len(result), limit, indicator, result)
+    if logger.isEnabledFor(logging.INFO):
+        msg = "Found top %d/%d search result(s) for indicator '%s':" % (len(result), limit, indicator)
+        rank = 0
+        for info in result:
+            rank += 1
+            url = info["url"]
+            msg += "\n\t%d - %s" % (rank, url)
+        logger.info(msg)
     return result
 
 
