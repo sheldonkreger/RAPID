@@ -9,9 +9,10 @@ from django_pgjson.fields import JsonField
 from core.utilities import check_domain_valid, get_base_domain
 
 
-class IndicatorManager(models.Manager):
+LOGGER = logging.getLogger(__name__)
 
-    LOGGER = logging.getLogger(__name__)
+
+class IndicatorManager(models.Manager):
 
     def host_records(self, indicator):
         record_type = 'HR'
@@ -30,7 +31,7 @@ class IndicatorManager(models.Manager):
                                              Q(info__at_indicator__exact=indicator)).values('info', 'info_date')
         if records:
             return records.latest('info_date')
-        IndicatorManager.LOGGER.info("Failed to retrieve certificate data for indicator %s" % indicator)
+        LOGGER.info("Failed to retrieve certificate data for indicator %s" % indicator)
         return records
 
     def recent_tc(self, indicator):
@@ -43,7 +44,7 @@ class IndicatorManager(models.Manager):
                                              Q(info__at_ip__exact=indicator)).values('info', 'info_date')
         if records:
             return records.latest('info_date')
-        IndicatorManager.LOGGER.info("Failed to retrieve ThreatCrowd data for indicator %s" % indicator)
+        LOGGER.info("Failed to retrieve ThreatCrowd data for indicator %s" % indicator)
         return records
 
     def recent_hosts(self, indicator):
@@ -174,10 +175,22 @@ class IndicatorManager(models.Manager):
         value = indicator
         if check_domain_valid(indicator):
             value = get_base_domain(indicator)
-        IndicatorManager.LOGGER.debug("Using search value: %s", value)
-        return self.get_queryset().filter(Q(record_type=record_type),
-                                          Q(info_date__gte=time_frame),
-                                          Q(info__at_indicator__exact=value)).values('info', 'info_date')
+        LOGGER.debug("Using search value: %s", value)
+        records = self.get_queryset().filter(Q(record_type=record_type),
+                                             Q(info_date__gte=time_frame),
+                                             Q(info__at_indicator__exact=value)).values('info', 'info_date')
+        if LOGGER.isEnabledFor(logging.INFO):
+            rank = 0
+            msg = "Found %d search record(s):" % len(records)
+            for record in records:
+                info = record['info']
+                results = info['results']
+                for result in results:
+                    rank += 1
+                    url = result['url']
+                    msg += "\n\t%d - %s" % (rank, url)
+            LOGGER.info(msg)
+        return records
 
 
 class IndicatorRecord(models.Model):
