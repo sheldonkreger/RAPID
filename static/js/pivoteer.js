@@ -137,7 +137,8 @@ function initialize_table(record_element) {
         $('#SR_table').dataTable({
             "iDisplayLength":  50,
             "info":            false,
-            "bLengthChange":   false
+            "bLengthChange":   false,
+            "bSort":           false
         })
     }
 }
@@ -220,6 +221,7 @@ $("#export").on( "click", "a", function(event) {
     var link = $(this);
     var linkURL = link.attr("href");
     var current_pivot = $("#pivot_navigator").find("li").last().find("span").text();
-    var fullURL = linkURL + "&indicator=" + current_pivot;
+    var connector = -1 === linkURL.indexOf("?") ? "?" : "&";
+    var fullURL = linkURL + connector + "indicator=" + current_pivot;
     window.open(fullURL);
 });
