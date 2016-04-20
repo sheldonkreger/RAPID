@@ -197,6 +197,7 @@ class ExportRecords(LoginRequiredMixin, View):
             self.export_historical(indicator, request)
             self.export_malware(indicator)
             self.export_search_records(indicator)
+            self.export_safebrowsing_records(indicator)
 
         elif indicator and filtering == 'recent':
             self.export_recent(indicator)
@@ -210,7 +211,20 @@ class ExportRecords(LoginRequiredMixin, View):
         elif indicator and filtering == 'search':
             self.export_search_records(indicator)
 
+        elif indicator and filtering == 'safebrowsing':
+            self.export_safebrowsing_records(indicator)
+
         return self.response
+
+    def export_safebrowsing_records(self, indicator):
+        safebrowsing_records = IndicatorRecord.objects.safebrowsing_record(indicator)
+
+        if safebrowsing_records:
+            self.line_separator()
+            self.writer.writerow(["Date", "Response"])
+            for record in safebrowsing_records:
+                entry = [record.info_date, record.info['body']]
+                self.writer.writerow(entry)
 
     def export_recent(self, indicator):
 
