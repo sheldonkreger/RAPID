@@ -221,9 +221,10 @@ class ExportRecords(LoginRequiredMixin, View):
 
         if safebrowsing_records:
             self.line_separator()
-            self.writer.writerow(["Date", "Response"])
+            self.writer.writerow(["Date", "Response", "SafeBrowsing Link"])
+            sb_link = "https://www.google.com/transparencyreport/safebrowsing/diagnostic/?hl=en#url=" + indicator
             for record in safebrowsing_records:
-                entry = [record.info_date, record.info['body']]
+                entry = [record.info_date, record.info['body'], sb_link]
                 self.writer.writerow(entry)
 
     def export_recent(self, indicator):
