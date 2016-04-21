@@ -264,7 +264,9 @@ def totalhash_ip_domain_search(self, indicator):
 
             th_logger.info("Retrieved Totalhash data for query %s Data: %s" % (query, raw_record))
 
-            # adding to malware records, # key 'text' contains actual hash
+            # Adding to malware records, # key 'text' contains actual hash
+            # We must include md5 and sha256 even though this task doesn't gather values for them.
+            # Otherwise, some record retrieval methods may fail.
             for entry in th.scrape_hash(raw_record, 'text'):
                 hash_link = "https://totalhash.cymru.com/analysis/?" + entry
                 record_entry = IndicatorRecord(record_type="MR",
@@ -272,7 +274,9 @@ def totalhash_ip_domain_search(self, indicator):
                                                info_date=current_time,
                                                info=OrderedDict({"sha1": entry,
                                                                  "indicator": indicator,
-                                                                 "link": hash_link}))
+                                                                 "link": hash_link,
+                                                                 "md5": "",
+                                                                 "sha256": ""}))
                 record_entry.save()
 
             logger.info("%s TH record_entries saved successfully" % record_count)
