@@ -152,7 +152,7 @@ Jump to:
   {% endif %}
   {% if tc_info.info.permalink %}
   <b>Permalink:</b><br>
-  <a href="{{ tc_info.info.permalink }}">{{ tc_info.info.permalink }}</a>
+  <a target="_blank" href="{{ tc_info.info.permalink }}">{{ tc_info.info.permalink }}</a>
   <br><br>
   {% endif %}
   {% if tc_info.info.emails %}
@@ -217,7 +217,7 @@ Jump to:
   {% else %}
     No results.
   {% endif %}
-<br><br><b>Permalink: </b><a href="https://www.censys.io/certificates?q={{ cert_info.info.indicator }}">https://www.censys.io/certificates?q={{ cert_info.info.indicator }}</a>
+<br><br><b>Permalink: </b><a target="_blank" href="https://www.censys.io/certificates?q={{ cert_info.info.indicator }}">https://www.censys.io/certificates?q={{ cert_info.info.indicator }}</a>
 <br>
 <table id="cert_table" class="table display">
   <tbody>
