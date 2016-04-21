@@ -9,6 +9,7 @@ from django.http import HttpResponse
 from django.shortcuts import render
 from django.views.generic.base import View
 from django.core.exceptions import ObjectDoesNotExist, MultipleObjectsReturned
+from django.conf import settings
 
 from .forms import SubmissionForm
 from .models import IndicatorRecord, TaskTracker
@@ -163,7 +164,7 @@ class CheckTask(LoginRequiredMixin, View):
             safebrowsing_records = IndicatorRecord.objects.safebrowsing_record(indicator)
             self.template_name = "pivoteer/Google.html"
             self.template_vars["records"] = safebrowsing_records
-            self.template_vars["google_url"] = "https://www.google.com/transparencyreport/safebrowsing/diagnostic/?hl=en#url=" + indicator
+            self.template_vars["google_url"] = settings.GOOGLE_SAFEBROWSING_URL + indicator
 
             self.template_vars["origin"] = indicator
 
@@ -222,7 +223,7 @@ class ExportRecords(LoginRequiredMixin, View):
         if safebrowsing_records:
             self.line_separator()
             self.writer.writerow(["Date", "Response", "SafeBrowsing Link"])
-            sb_link = "https://www.google.com/transparencyreport/safebrowsing/diagnostic/?hl=en#url=" + indicator
+            sb_link = settings.GOOGLE_SAFEBROWSING_URL + indicator
             for record in safebrowsing_records:
                 entry = [record.info_date, record.info['body'], sb_link]
                 self.writer.writerow(entry)
