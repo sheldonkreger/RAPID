@@ -276,7 +276,6 @@ def malware_samples(indicator, record_source):
                              record_type.title,
                              record_source.title)
 
-
 @app.task
 def google_safebrowsing(indicator):
     record_type = RecordType.SB
@@ -295,7 +294,6 @@ def google_safebrowsing(indicator):
                          record_type.name,
                          record_type.title,
                          record_source.title)
-
 
 # Task to look up totalhash ip or domain search terms
 @app.task

@@ -7,12 +7,9 @@ from django.db.models import Q
 from django.db.models import Max, Min
 from django_pgjson.fields import JsonField
 from core.utilities import check_domain_valid, get_base_domain
-
 from pivoteer.records import RecordType, RecordSource
 
-
 LOGGER = logging.getLogger(__name__)
-
 
 class IndicatorManager(models.Manager):
 
