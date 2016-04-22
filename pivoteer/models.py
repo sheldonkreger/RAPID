@@ -8,6 +8,8 @@ from django.db.models import Max, Min
 from django_pgjson.fields import JsonField
 from core.utilities import check_domain_valid, get_base_domain
 
+logger = logging.getLogger(None)
+
 
 LOGGER = logging.getLogger(__name__)
 
@@ -240,6 +242,7 @@ class IndicatorRecord(models.Model):
         return info_sha1
 
     def save(self, *args, **kwargs):
+        logger.error("hit save")
 
         if not self.info_hash:
             self.info_hash = self.generate_hash()

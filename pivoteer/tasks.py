@@ -224,6 +224,7 @@ def malware_samples(self, indicator, source):
 
 @app.task(bind=True)
 def google_safebrowsing(self, indicator):
+    print("hit")
     current_time = datetime.datetime.utcnow()
     safebrowsing_response = lookup_google_safe_browsing(indicator)
     safebrowsing_status = safebrowsing_response[0]
@@ -236,8 +237,11 @@ def google_safebrowsing(self, indicator):
                                        info=OrderedDict({"indicator": indicator,
                                                          "statusCode": safebrowsing_status,
                                                          "body": safebrowsing_body}))
-        record_entry.save()
+        print("before save")
+        if not record_entry.save():
+            logger.error("did not save safebrowsing")
     except Exception as e:
+        logger.error("kreger error")
         print(e)
 
 

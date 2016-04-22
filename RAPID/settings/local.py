@@ -6,6 +6,8 @@ TEMPLATE_DEBUG = True
 CSRF_COOKIE_SECURE = False
 SESSION_COOKIE_SECURE = False
 
+
+
 AMQP_URL = 'amqp://guest:guest@localhost:5672//'
 
 BASE_SITE_URL = 'http://0.0.0.0:8000'

@@ -93,6 +93,7 @@ INSTALLED_APPS = (
     'profiles',
     'pivoteer',
     'monitors',
+    'tests',
 )
 
 
