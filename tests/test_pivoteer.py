@@ -25,17 +25,18 @@ class SimplisticTest(TestCase):
 
     def test_safesearch_record_contents(self):
         # Execute Celery task synchrounously using .delay(). This will store the record in the test DB.
-        google_safebrowsing.delay(self.indicator)
+        google_safebrowsing(self.indicator)
 
         # Retreive records (return value is a QuerySet).
         safebrowsing_records = IndicatorRecord.objects.safebrowsing_record(self.indicator)
+        self.assertGreater(safebrowsing_records.count(), 0)
 
         # Validate that each field is included in the record.
         # We must loop even though there is only one record because Django gives us a QuerySet.
         for record in safebrowsing_records:
             self.assertTrue("SB" in record.record_type)
             self.assertTrue("GSB" in record.info_source)
-            self.assertEqual(self.current_time, record.info_date)
+            self.assertGreater(datetime.datetime.utcnow(), record.info_date)
             self.assertTrue("statusCode" in record.info)
             self.assertTrue("indicator" in record.info)
             self.assertTrue("body" in record.info)
