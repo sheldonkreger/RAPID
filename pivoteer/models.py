@@ -151,7 +151,11 @@ class IndicatorManager(models.Manager):
 
             if hash_value not in tracking:
                 record_info = self.get_queryset().filter(info_hash=hash_value).values('info')[0]['info']
-                new_record = {'latest': record['latest'], 'earliest': record['earliest'], 'info': record_info}
+                span = str(record['earliest']) + " / " + str(record['latest'])
+                new_record = {'latest': record['latest'],
+                              'earliest': record['earliest'],
+                              'info_date': span,
+                              'info': record_info}
                 unique_records.append(new_record)
                 tracking.append(hash_value)
 
