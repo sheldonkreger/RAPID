@@ -190,6 +190,22 @@ class SearchResult:
     def __str__(self):
         return str(self.to_dict())
 
+    @staticmethod
+    def from_dict(dictionary):
+        """
+        Create a SearchResult from a dictionary.
+
+        This factory method is the inverse of the SearchResult.to_dict
+
+        :param dictionary: The dictionary (such as one obtained from SearchResult.to_dict)
+        :return: The SearchResult instance
+        :raises: KeyError if the dictionary does not contain a required key
+        """
+        url = dictionary[SearchResult.URL]
+        title = dictionary[SearchResult.TITLE]
+        content = dictionary[SearchResult.CONTENT]
+        return SearchResult(url, title, content)
+
 
 class Sifter:
     """
