@@ -15,6 +15,7 @@ from core.utilities import time_jump
 from core.lookups import geolocate_ip
 from celery.result import GroupResult
 from braces.views import LoginRequiredMixin
+from pivoteer.records import RecordType
 from pivoteer.writer.censys import CensysCsvWriter
 from pivoteer.writer.hosts import HostCsvWriter
 from pivoteer.writer.malware import MalwareCsvWriter
@@ -243,7 +244,7 @@ class ExportRecords(LoginRequiredMixin, View):
         :return: This method returns no values
         """
         safebrowsing_records = IndicatorRecord.objects.safebrowsing_record(indicator)
-        self._write_records("SB", indicator, safebrowsing_records)
+        self._write_records(RecordType.SB, indicator, safebrowsing_records)
 
     def export_recent_hosts(self, indicator):
         """
@@ -255,7 +256,7 @@ class ExportRecords(LoginRequiredMixin, View):
         :return: This method returns no values
         """
         hosts = IndicatorRecord.objects.recent_hosts(indicator)
-        self._write_records("HR", indicator, hosts)
+        self._write_records(RecordType.HR, indicator, hosts)
 
     def export_recent_whois(self, indicator):
         """
@@ -267,7 +268,7 @@ class ExportRecords(LoginRequiredMixin, View):
         :return: This method returns no values
         """
         whois = IndicatorRecord.objects.recent_whois(indicator)
-        self._write_records("WR", indicator, [whois])
+        self._write_records(RecordType.WR, indicator, [whois])
 
     def export_recent_threatcrowd(self, indicator):
         """
@@ -279,7 +280,7 @@ class ExportRecords(LoginRequiredMixin, View):
         :return: This method returns no values
         """
         tc_info = IndicatorRecord.objects.recent_tc(indicator)
-        self._write_records("TR", indicator, [tc_info])
+        self._write_records(RecordType.TR, indicator, [tc_info])
 
     def export_recent_certificates(self, indicator):
         """
@@ -291,7 +292,7 @@ class ExportRecords(LoginRequiredMixin, View):
         :return: This method returns no values
         """
         latest = IndicatorRecord.objects.recent_cert(indicator)
-        self._write_records("CE", indicator, [latest])
+        self._write_records(RecordType.CE, indicator, [latest])
 
     def export_recent(self, indicator):
         """
@@ -320,7 +321,7 @@ class ExportRecords(LoginRequiredMixin, View):
         :return: This method returns no values
         """
         hosts = IndicatorRecord.objects.historical_hosts(indicator, request)
-        self._write_records("HR", indicator, hosts)
+        self._write_records(RecordType.HR, indicator, hosts)
 
     def export_historical_whois(self, indicator):
         """
@@ -330,7 +331,7 @@ class ExportRecords(LoginRequiredMixin, View):
         :return: This method returns no values
         """
         whois = IndicatorRecord.objects.historical_whois(indicator)
-        self._write_records("WR", indicator, whois)
+        self._write_records(RecordType.WR, indicator, whois)
 
     def export_historical(self, indicator, request):
         """
@@ -352,7 +353,7 @@ class ExportRecords(LoginRequiredMixin, View):
         :return: This method returns no values
         """
         malware = IndicatorRecord.objects.malware_records(indicator)
-        self._write_records("MR", indicator, malware)
+        self._write_records(RecordType.MR, indicator, malware)
 
     def export_search_records(self, indicator):
         """
@@ -367,7 +368,7 @@ class ExportRecords(LoginRequiredMixin, View):
         :return: This method does not return any values
         """
         records = IndicatorRecord.objects.get_search_records(indicator)
-        self._write_records("SR", indicator, records)
+        self._write_records(RecordType.SR, indicator, records)
 
     def _write_records(self, record_type, indicator, records):
         """
@@ -379,9 +380,10 @@ class ExportRecords(LoginRequiredMixin, View):
         :return: This method returns no values
         """
         record_writer = self._get_csv_writer(record_type)
-        LOGGER.debug("Writing %d record(s) of type '%s' for indicator '%s' using writer type %s",
+        LOGGER.debug("Writing %d record(s) of type %s (%s) for indicator '%s' using writer type %s",
                      len(records),
-                     record_type,
+                     record_type.name,
+                     record_type.title,
                      indicator,
                      type(record_writer).__name__)
         if records is None or 0 == len(records):
@@ -397,19 +399,19 @@ class ExportRecords(LoginRequiredMixin, View):
         IndicatorRecord.record_choices.
         :return: An instantiated CsvWriter
         """
-        if "SR" == record_type:
+        if RecordType.SR is record_type:
             return SearchCsvWriter(self.writer)
-        elif "HR" == record_type:
+        elif RecordType.HR is record_type:
             return HostCsvWriter(self.writer)
-        elif "WR" == record_type:
+        elif RecordType.WR is record_type:
             return WhoIsCsvWriter(self.writer)
-        elif "TR" == record_type:
+        elif RecordType.TR is record_type:
             return ThreatCrowdCsvWriter(self.writer)
-        elif "CE" == record_type:
+        elif RecordType.CE is record_type:
             return CensysCsvWriter(self.writer)
-        elif "SB" == record_type:
+        elif RecordType.SB is record_type:
             return SafeBrowsingCsvWriter(self.writer)
-        elif "MR" == record_type:
+        elif RecordType.MR is record_type:
             return MalwareCsvWriter(self.writer)
         else:
             msg = "No writer for record type: " + record_type
