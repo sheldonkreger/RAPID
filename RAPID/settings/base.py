@@ -58,6 +58,7 @@ TOTAL_HASH_API_ID = retrieve_secret_configuration("TOTAL_HASH_API_ID")
 TOTAL_HASH_SECRET = retrieve_secret_configuration("TOTAL_HASH_SECRET")
 GOOGLE_SAFEBROWSING_API_KEY = retrieve_secret_configuration("GOOGLE_SAFEBROWSING_API_KEY")
 GOOGLE_SAFEBROWSING_API_CLIENT = retrieve_secret_configuration("GOOGLE_SAFEBROWSING_API_CLIENT")
+GOOGLE_SAFEBROWSING_URL = "https://www.google.com/transparencyreport/safebrowsing/diagnostic/?hl=en#url="
 
 # Database setting variables
 SQL_NAME = retrieve_secret_configuration("SQL_NAME")

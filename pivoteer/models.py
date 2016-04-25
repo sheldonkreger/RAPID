@@ -9,9 +9,10 @@ from django_pgjson.fields import JsonField
 from core.utilities import check_domain_valid, get_base_domain
 
 
-class IndicatorManager(models.Manager):
+LOGGER = logging.getLogger(__name__)
 
-    LOGGER = logging.getLogger(__name__)
+
+class IndicatorManager(models.Manager):
 
     def host_records(self, indicator):
         record_type = 'HR'
@@ -30,7 +31,7 @@ class IndicatorManager(models.Manager):
                                              Q(info__at_indicator__exact=indicator)).values('info', 'info_date')
         if records:
             return records.latest('info_date')
-        IndicatorManager.LOGGER.info("Failed to retrieve certificate data for indicator %s" % indicator)
+        LOGGER.info("Failed to retrieve certificate data for indicator %s" % indicator)
         return records
 
     def recent_tc(self, indicator):
@@ -43,7 +44,7 @@ class IndicatorManager(models.Manager):
                                              Q(info__at_ip__exact=indicator)).values('info', 'info_date')
         if records:
             return records.latest('info_date')
-        IndicatorManager.LOGGER.info("Failed to retrieve ThreatCrowd data for indicator %s" % indicator)
+        LOGGER.info("Failed to retrieve ThreatCrowd data for indicator %s" % indicator)
         return records
 
     def recent_hosts(self, indicator):
@@ -162,6 +163,35 @@ class IndicatorManager(models.Manager):
                                              Q(info__at_indicator__exact=indicator))
         return records
 
+    def get_search_records(self, indicator):
+        """
+        Retrieve any search records from within the last 24 hours for an indicator from the database.
+
+        :param indicator: The indicator value
+        :return:  The search records for the indicator
+        """
+        record_type = 'SR'
+        time_frame = datetime.datetime.utcnow() + datetime.timedelta(hours=-24)
+        value = indicator
+        if check_domain_valid(indicator):
+            value = get_base_domain(indicator)
+        LOGGER.debug("Using search value: %s", value)
+        records = self.get_queryset().filter(Q(record_type=record_type),
+                                             Q(info_date__gte=time_frame),
+                                             Q(info__at_indicator__exact=value)).values('info', 'info_date')
+        if LOGGER.isEnabledFor(logging.INFO):
+            rank = 0
+            msg = "Found %d search record(s):" % len(records)
+            for record in records:
+                info = record['info']
+                results = info['results']
+                for result in results:
+                    rank += 1
+                    url = result['url']
+                    msg += "\n\t%d - %s" % (rank, url)
+            LOGGER.info(msg)
+        return records
+
 
 class IndicatorRecord(models.Model):
 
@@ -171,7 +201,8 @@ class IndicatorRecord(models.Model):
         ('WR', 'Whois Record'),
         ('TR', 'ThreatCrowd Record'),
         ('SB', 'SafeBrowsing Record'),
-        ('CE', 'Censys Record')
+        ('CE', 'Censys Record'),
+        ('SR', 'Search Record')
     )
 
     source_choices = (
@@ -185,7 +216,8 @@ class IndicatorRecord(models.Model):
         ('THR', 'ThreatCrowd'),
         ('GSB', 'Google Safe Browsing'),
         ('THS', 'Total Hash'),
-        ('CEN', "Censys.io")
+        ('CEN', "Censys.io"),
+        ('GSE', 'Google Search Engine')
     )
 
     record_type = models.CharField(max_length=2, choices=record_choices)

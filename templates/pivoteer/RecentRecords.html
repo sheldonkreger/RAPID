@@ -32,11 +32,11 @@ Jump to:
                         {% if record.info.ip != origin %}
                             <span class="pivot">{{ record.info.ip }}</span>
                             <br>
-                            {{ record.info.geo_location.country }}
+                            {{ record.location.country }}
                         {% else %}
                             {{ record.info.ip }}
                             <br>
-                            {{ record.info.geo_location.country }}
+                            {{ record.location.country }}
                         {% endif %}
                     </td>
                     <td>{{ record.get_info_source_display }}</td>
@@ -147,9 +147,12 @@ Jump to:
   <b>Lookup Date:</b><br>
   {{ tc_info.info_date }}
   <br><br>
+  {% if tc_info.info.error %}
+  Error retrieving TC data: {{ tc_info.info.error }}
+  {% endif %}
   {% if tc_info.info.permalink %}
   <b>Permalink:</b><br>
-  <a href="{{ tc_info.info.permalink }}">{{ tc_info.info.permalink }}</a>
+  <a target="_blank" href="{{ tc_info.info.permalink }}">{{ tc_info.info.permalink }}</a>
   <br><br>
   {% endif %}
   {% if tc_info.info.emails %}
@@ -206,9 +209,15 @@ Jump to:
 <h3>Most Recent Certificate Search Results</h3>
 <a href="#top">Back to top</a><br><br>
 {% if cert_info %}
-<br><b>Total results: </b>{{ cert_info.info.total }}
-<b> Saved: </b>{{ cert_info.info.count }}
-<br><br><b>Permalink: </b><a href="https://www.censys.io/certificates?q={{ cert_info.info.indicator }}">https://www.censys.io/certificates?q={{ cert_info.info.indicator }}</a>
+  {% if cert_info.info.status %}
+    Error retrieving certificate data: {{ cert_info.info.message }}
+  {% elif cert_info.info.count > 0 %}
+    <br><b>Total results: </b>{{ cert_info.info.total }}
+    <b> Saved: </b>{{ cert_info.info.count }}
+  {% else %}
+    No results.
+  {% endif %}
+<br><br><b>Permalink: </b><a target="_blank" href="https://www.censys.io/certificates?q={{ cert_info.info.indicator }}">https://www.censys.io/certificates?q={{ cert_info.info.indicator }}</a>
 <br>
 <table id="cert_table" class="table display">
   <tbody>

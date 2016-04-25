@@ -1,18 +1,25 @@
 import csv
 import json
 import datetime
+import logging
+
+import core.google
 
 from django.http import HttpResponse
 from django.shortcuts import render
 from django.views.generic.base import View
 from django.core.exceptions import ObjectDoesNotExist, MultipleObjectsReturned
+from django.conf import settings
 
 from .forms import SubmissionForm
 from .models import IndicatorRecord, TaskTracker
 from core.utilities import time_jump
-
+from core.lookups import geolocate_ip, resolve_domain
 from celery.result import GroupResult
 from braces.views import LoginRequiredMixin
+
+
+LOGGER = logging.getLogger(__name__)
 
 
 class PivotManager(LoginRequiredMixin, View):
@@ -98,7 +105,16 @@ class CheckTask(LoginRequiredMixin, View):
 
             # Current hosting records
             host_record = IndicatorRecord.objects.recent_hosts(indicator)
-            self.template_vars["current_hosts"] = host_record
+
+            # We must lookup the country for each IP address for use in the template.
+            # We do this outside the task because we don't know the IP addresses until the task completes.
+            host_records_complete = []
+            for record in host_record:
+                info = getattr(record, 'info')
+                record.location = geolocate_ip(info['ip'])
+                host_records_complete.append(record)
+
+            self.template_vars["current_hosts"] = host_records_complete
 
             # Current WHOIS record
             whois_record = IndicatorRecord.objects.recent_whois(indicator)
@@ -111,13 +127,24 @@ class CheckTask(LoginRequiredMixin, View):
             cert_info = IndicatorRecord.objects.recent_cert(indicator)
             self.template_vars["cert_info"] = cert_info
 
+
+
         elif record_type == "Historical":
 
             self.template_name = "pivoteer/HistoricalRecords.html"
 
             # Historical hosting records
             host_records = IndicatorRecord.objects.historical_hosts(indicator, request)
-            self.template_vars["hosting_records"] = host_records
+
+            # We must lookup the country for each IP address for use in the template.
+            # We do this outside the task because we don't know the IP addresses until the task completes.
+            host_records_complete = []
+            for record in host_records:
+                info = getattr(record, 'info')
+                record.location = geolocate_ip(info['ip'])
+                host_records_complete.append(record)
+
+            self.template_vars["hosting_records"] = host_records_complete
 
             # Historical WHOIS records
             whois_record = IndicatorRecord.objects.historical_whois(indicator)
@@ -132,15 +159,19 @@ class CheckTask(LoginRequiredMixin, View):
 
             self.template_vars["origin"] = indicator
 
-
         elif record_type == "SafeBrowsing":
 
             safebrowsing_records = IndicatorRecord.objects.safebrowsing_record(indicator)
             self.template_name = "pivoteer/Google.html"
             self.template_vars["records"] = safebrowsing_records
-            self.template_vars["google_url"] = "https://www.google.com/transparencyreport/safebrowsing/diagnostic/?hl=en#url=" + indicator
+            self.template_vars["google_url"] = settings.GOOGLE_SAFEBROWSING_URL + indicator
 
             self.template_vars["origin"] = indicator
+
+        elif record_type == "Search":
+            self.template_name = "pivoteer/SearchRecords.html"
+            search_records = IndicatorRecord.objects.get_search_records(indicator)
+            self.template_vars["search_records"] = search_records
 
         return render(request, self.template_name, self.template_vars)
 
@@ -160,11 +191,14 @@ class ExportRecords(LoginRequiredMixin, View):
     def get(self, request):
         indicator = request.GET.get('indicator', '')
         filtering = request.GET.get('filter', '')
+        LOGGER.debug("EXPORTING '%s' with filter: %s", indicator, filtering)
 
         if indicator and filtering == '':
             self.export_recent(indicator)
             self.export_historical(indicator, request)
             self.export_malware(indicator)
+            self.export_search_records(indicator)
+            self.export_safebrowsing_records(indicator)
 
         elif indicator and filtering == 'recent':
             self.export_recent(indicator)
@@ -175,7 +209,24 @@ class ExportRecords(LoginRequiredMixin, View):
         elif indicator and filtering == 'malware':
             self.export_malware(indicator)
 
+        elif indicator and filtering == 'search':
+            self.export_search_records(indicator)
+
+        elif indicator and filtering == 'safebrowsing':
+            self.export_safebrowsing_records(indicator)
+
         return self.response
+
+    def export_safebrowsing_records(self, indicator):
+        safebrowsing_records = IndicatorRecord.objects.safebrowsing_record(indicator)
+
+        if safebrowsing_records:
+            self.line_separator()
+            self.writer.writerow(["Date", "Response", "SafeBrowsing Link"])
+            sb_link = settings.GOOGLE_SAFEBROWSING_URL + indicator
+            for record in safebrowsing_records:
+                entry = [record.info_date, record.info['body'], sb_link]
+                self.writer.writerow(entry)
 
     def export_recent(self, indicator):
 
@@ -233,6 +284,37 @@ class ExportRecords(LoginRequiredMixin, View):
                          record.info['sha1'], record.info['sha256'], record.info['link']]
 
                 self.writer.writerow(entry)
+
+    def export_search_records(self, indicator):
+        """
+        Export Search Results.
+
+        This will produce a CSV file containing three columns:
+            title: The title of the search result
+            url: The URL of the search result
+            content: A brief summary of the content of the result
+
+        :param indicator: The indicator whose search results are to be exported
+        :return: This method does not return any values
+        """
+        records = IndicatorRecord.objects.get_search_records(indicator)
+        LOGGER.debug("Found %d record(s) for export", len(records))
+        if records:
+            self.line_separator()
+            self.writer.writerow(["Title", "URL", "Content"])
+            number = 0
+            for record in records:
+                number += 1
+                info = record['info']
+                results = info['results']
+                LOGGER.debug("Found %d result(s) in record #%d", len(results), number)
+                for result in results:
+                    LOGGER.debug("Processing result: %s", result)
+                    url = result[core.google.SearchResult.URL]
+                    title = result[core.google.SearchResult.TITLE]
+                    content = result[core.google.SearchResult.CONTENT]
+                    entry = [title, url, content]
+                    self.writer.writerow(entry)
 
     def line_separator(self):
         self.writer.writerow([])

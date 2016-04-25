@@ -5,6 +5,7 @@ import tldextract
 import pythonwhois
 import dns.resolver
 import geoip2.database
+import core.google
 import urllib.request
 from ipwhois import IPWhois
 from collections import OrderedDict
@@ -13,6 +14,7 @@ from censys.ipv4 import CensysIPv4
 from censys.certificates import CensysCertificates
 from censys.base import CensysException
 from django.conf import settings
+
 
 logger = logging.getLogger(__name__)
 current_directory = os.path.dirname(__file__)
@@ -114,8 +116,8 @@ def lookup_ip_whois(ip):
 
     return None
 
-# See docs: https://developers.google.com/safe-browsing/lookup_guide#HTTPGETRequest
 
+# See docs: https://developers.google.com/safe-browsing/lookup_guide#HTTPGETRequest
 def lookup_google_safe_browsing(domain):
     url = "https://sb-ssl.google.com/safebrowsing/api/lookup?client=" + settings.GOOGLE_SAFEBROWSING_API_CLIENT + "&key=" + settings.GOOGLE_SAFEBROWSING_API_KEY + "&appver=1.5.2&pver=3.1&url=" + domain
     response = urllib.request.urlopen(url)
@@ -143,6 +145,7 @@ def lookup_google_safe_browsing(domain):
 
     return (response.status, body)
 
+
 def lookup_ip_censys_https(ip):
     api_id = settings.CENSYS_API_ID
     api_secret = settings.CENSYS_API_SECRET
@@ -151,9 +154,53 @@ def lookup_ip_censys_https(ip):
         ip_data = CensysIPv4(api_id=api_id, api_secret=api_secret).view(ip)
         return ip_data['443']['https']['tls']['certificate']['parsed']
     except KeyError:
-        return {'status':404,'message':"No HTTPS certificate data was found for IP " + ip}
+        return {'status': 404, 'message': "No HTTPS certificate data was found for IP " + ip}
     except CensysException as ce:
-        return {'status':ce.status_code,'message':ce.message}
+        return {'status': ce.status_code, 'message': ce.message}
+
+
+def google_for_indicator(indicator, limit=10, domain=None):
+    """
+    Find the top 'limit' Google search results for 'indicator' (excluding those from 'domain').
+
+    Note: The domain will be wrapped in quotes before being submitted to Google.  It should therefore NOT be so wrapped
+    when passed to this function.
+
+    This method will also filter any results to ensure that none of the URLs returned actually point to the given domain
+    (or any subdomain thereof).   In this manner, if you search for "domain.com," results such as
+    "http://domain.com/page.html" and "http://sub.domain.com/file.pdf" will NOT be included in the results.
+
+    :param indicator: The indicator value for which to search.  This should NOT be wrapped in quotation marks.
+    :param limit: The maximum number of search results to return (optional, default: 10)
+    :param domain: A domain from which results should be excluded
+    :return: A list containing the URLs of the search results, in the order returned by Google
+    """
+    logger.debug("Searching Google for indicator '%s' (limit: %d)", indicator, limit)
+    parameter = "\"" + indicator + "\""
+
+    if domain is None:
+        sifter = core.google.KeepSifter()
+    else:
+        sifter = core.google.DomainSifter(domain)
+    result = list()
+    try:
+        for info in core.google.search(parameter, limit=limit, sifter=sifter):
+            result.append(info.to_dict())
+    except Exception:
+        # Something went wrong, most likely when querying Google.  There's nothing we can really do about it, so we will
+        # log the error and return an empty list
+        logger.exception("Unexpected error performing Google search")
+        result = list()
+    if logger.isEnabledFor(logging.INFO):
+        msg = "Found top %d/%d search result(s) for indicator '%s':" % (len(result), limit, indicator)
+        rank = 0
+        for info in result:
+            rank += 1
+            url = info["url"]
+            msg += "\n\t%d - %s" % (rank, url)
+        logger.info(msg)
+    return result
+
 
 def lookup_certs_censys(other, count):
     api_id = settings.CENSYS_API_ID
