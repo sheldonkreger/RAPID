@@ -10,7 +10,7 @@ app = Celery('RAPID')
 logger = logging.getLogger(None)
 
 
-class SimplisticTest(TestCase):
+class IndicatorRecordValues(TestCase):
 
     indicator = "twitter.com"
     ip_indicator = "199.59.150.7"
