@@ -5,6 +5,7 @@ from .models import TaskTracker
 from .tasks import *
 
 from celery import group
+from pivoteer.records import RecordSource, RecordType
 
 
 class SubmissionForm(forms.Form):
@@ -68,16 +69,16 @@ class SubmissionForm(forms.Form):
 
         elif record_type == "Historical":
             if self.indicator_type != "other":
-                new_task = group([passive_hosts.s(indicator, "VTO"),
-                                  # passive_hosts.s(indicator, "PTO"),
-                                  passive_hosts.s(indicator, "IID")])()
+                new_task = group([passive_hosts.s(indicator, RecordSource.VTO),
+                                  # passive_hosts.s(indicator, RecordSource.PTO),
+                                  passive_hosts.s(indicator, RecordSource.IID)])()
             else:
                 new_task = None
 
         elif record_type == "Malware":
             if self.indicator_type != "other":
-                new_task = group([malware_samples.s(indicator, "TEX"),
-                                  malware_samples.s(indicator, "VTO"),
+                new_task = group([malware_samples.s(indicator, RecordSource.TEX),
+                                  malware_samples.s(indicator, RecordSource.VTO),
                                   totalhash_ip_domain_search.s(indicator)])()
             else:
                 new_task = None
