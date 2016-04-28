@@ -2,6 +2,9 @@
 """
 Python API for malwr.com Website.
 
+Note: Copied from https://github.com/PaulSec/API-malwr.com and modified
+for python 3 compatibility.
+
 Followings are the available search terms;
 ______________________________________________________________________
 |   PREFIX	    |       DESCRIPTION                                  |
