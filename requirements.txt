@@ -29,4 +29,4 @@ werkzeug==0.9.6
 xmltodict==0.10.1
 dpath==1.4.0
 netaddr==0.7.18
-
+bs4==0.0.1

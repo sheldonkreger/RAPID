@@ -8,6 +8,7 @@ from django.conf import settings
 from RAPID.celery import app
 from core.threatcrowd import ThreatCrowd
 from core.totalhash import TotalHashApi
+from core.malwr import MalwrApi
 from core.lookups import lookup_ip_whois, lookup_domain_whois, resolve_domain, geolocate_ip, lookup_ip_censys_https, \
     lookup_google_safe_browsing, lookup_certs_censys, google_for_indicator
 from pivoteer.collectors.scrape import RobtexScraper, InternetIdentityScraper
@@ -295,6 +296,57 @@ def google_safebrowsing(indicator):
                          record_type.name,
                          record_type.title,
                          record_source.title)
+
+
+# Task to look up malwr ip or domain search terms
+@app.task
+def malwr_ip_domain_search(indicator):
+    record_type = RecordType.MR
+    record_source = RecordSource.MWS
+    mw_logger = logging.getLogger(None)
+    api_id = settings.MALWR_LOGIN_ID
+    api_secret = settings.MALWR_LOGIN_SECRET
+    mw = MalwrApi(verbose=True, username=api_id, password=api_secret)
+    if valid_ipv6(indicator) or valid_ipv4(indicator):
+        query = "ip:" + indicator
+    else:
+        query = "domain:" + indicator
+
+    raw_record = mw.search(search_word=query);
+
+    if len(raw_record) > 0:
+        try:
+            mw_logger.info("Retrieved Malwr data for query %s Data: %s" % (query, raw_record))
+
+            for entry in raw_record:
+                m_hash_link = "https://malwr.com" + entry['submission_url']
+                if 'a.m.' in entry['submission_time']:
+                    ampm = 'a.m.'
+                else:
+                    ampm = 'p.m.'
+
+                submission_time = datetime.datetime.strptime(entry['submission_time'], '%B %d, %Y, %I:%M ' + ampm)
+                info = OrderedDict({"sha1": entry['hash'],
+                                    "indicator": indicator,
+                                    "link": m_hash_link,
+                                    "md5": "",
+                                    "sha256": ""})
+                save_record(record_type,
+                            record_source,
+                            info,
+                            date=submission_time)
+
+            logger.info("%s MW record_entries saved successfully" % len(raw_record))
+
+
+        except Exception:
+            logger.exception("Error saving %s (%s) record from %s",
+                             record_type.name,
+                             record_type.title,
+                             record_source.title)
+    else:
+        mw_logger.info("No Malwr data, save aborted")
+
 
 
 # Task to look up totalhash ip or domain search terms
