@@ -1,11 +1,14 @@
 from __future__ import absolute_import
+import sys
 from netaddr import *
 
 import datetime, logging, json
+from dateutil.parser import parse
 import dpath.util
 from collections import OrderedDict
 from django.conf import settings
 from RAPID.celery import app
+from core.utilities import scrape_attribute
 from core.threatcrowd import ThreatCrowd
 from core.totalhash import TotalHashApi
 from core.malwr import MalwrApi
@@ -18,6 +21,12 @@ from pivoteer.records import RecordSource, RecordType
 from .models import IndicatorRecord
 
 logger = logging.getLogger(None)
+
+# Temporary fix to avoid :
+#   RuntimeError: maximum recursion depth exceeded while getting the str of an object
+# TODO: Convert recursion method to iterator if possible. Subject method might be: core.utilities::scrape_attribute
+# This error is thrown intermittently
+sys.setrecursionlimit(10000)
 
 
 def create_record(record_type,
@@ -320,12 +329,7 @@ def malwr_ip_domain_search(indicator):
 
             for entry in raw_record:
                 m_hash_link = "https://malwr.com" + entry['submission_url']
-                if 'a.m.' in entry['submission_time']:
-                    ampm = 'a.m.'
-                else:
-                    ampm = 'p.m.'
-
-                submission_time = datetime.datetime.strptime(entry['submission_time'], '%B %d, %Y, %I:%M ' + ampm)
+                submission_time = parse(entry['submission_time'])
                 info = OrderedDict({"sha1": entry['hash'],
                                     "indicator": indicator,
                                     "link": m_hash_link,
@@ -336,7 +340,10 @@ def malwr_ip_domain_search(indicator):
                             info,
                             date=submission_time)
 
-            logger.info("%s MW record_entries saved successfully" % len(raw_record))
+            logger.info("%s %s for %s saved successfully",
+                        len(raw_record),
+                        record_type.title,
+                        record_source.title)
 
 
         except Exception:
@@ -377,7 +384,7 @@ def totalhash_ip_domain_search(indicator):
             # Adding to malware records, # key 'text' contains actual hash
             # We must include md5 and sha256 even though this task doesn't gather values for them.
             # Otherwise, some record retrieval methods may fail.
-            for entry in th.scrape_hash(raw_record, 'text'):
+            for entry in scrape_attribute(raw_record, 'text'):
                 hash_link = "https://totalhash.cymru.com/analysis/?" + entry
                 info = OrderedDict({"sha1": entry,
                                     "indicator": indicator,
