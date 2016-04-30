@@ -2,9 +2,6 @@
 """
 Python API for malwr.com Website.
 
-Note: Copied from https://github.com/PaulSec/API-malwr.com and modified
-for python 3 compatibility.
-
 Followings are the available search terms;
 ______________________________________________________________________
 |   PREFIX	    |       DESCRIPTION                                  |
@@ -24,93 +21,97 @@ ______________________________________________________________________
 |   signature:	|   Search for Cuckoo Sandbox signatures
 |   tag:	    |   Search on your personal tags
 ----------------------------------------------------------------------
+
+
 """
 
-import hashlib, ssl, logging
-import re
-import requests
-from bs4 import BeautifulSoup
-
+import requests, logging
+from lxml import html
 
 class MalwrApi(object):
-    """
-        MalwrAPI Main Handler
-    """
-    session = None
-    logged = False
-    verbose = False
 
-    url = "https://malwr.com"
-    headers = {
-        'User-Agent': 'Mozilla/4.0 (compatible; MSIE+8.0; Windows NT 5.1; Trident/4.0;)'
-    }
-    LOGGER = logging.getLogger(__name__)
-
-    def __init__(self, verbose=False, username=None, password=None):
-
-        self.verbose = verbose
+    def __init__(self, username=None, password=None):
+        self.logger = logging.getLogger(__name__)
+        self.logged = False
+        self.url = "https://malwr.com"
+        self.headers = {
+            'User-Agent':
+                "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:41.0) " +
+                "Gecko/20100101 Firefox/41.0"
+        }
         self.session = requests.session()
 
-        # Authenticate and store the session
-        if username and password:
-
-            soup = self.request_to_soup(self.url + '/account/login')
-            csrf_input = soup.find(attrs=dict(name='csrfmiddlewaretoken'))
-            csrf_token = csrf_input['value']
-
+        if not (username or password):
+            self.logger.warn ("MalwrApi::You must login using your username and password")
+        else:
+            csrf_token = self.get_session_token(self.url + '/account/login')
             payload = {
                 'csrfmiddlewaretoken': csrf_token,
-                'username': u'{0}'.format(username),
-                'password': u'{0}'.format(password)
+                'username': username,
+                'password': password
             }
             login_request = self.session.post("https://malwr.com/account/login/",
-                                              data=payload, headers=self.headers)
+                                              data=payload,
+                                              headers=self.headers)
 
-            if login_request.status_code == 200:
-                self.logged = True
-            else:
-                self.logged = False
-                Malwr.LOGGER.warn ("Error Not being able to login using the credentials")
+            login_status = self.check_login_status(login_request)
+            self.logged = login_status['loggedIn']
+            if self.logged is False:
+                self.logger.warn (login_status['msg'])
 
-    def request_to_soup(self, url=None):
 
-        if not url:
-            url = self.url
+    def check_login_status(self, result):
+        rTree = html.fromstring(result.content)
+        error = rTree.xpath("//div[@class='alert alert-error']")
+        err_elm = [elem.text_content().replace("\n", "").strip() for elem in error]
+        status = {}
+        if len(err_elm) > 0:
+            status['loggedIn'] = False
+            status['msg'] = 'MalwrApi::' + err_elm[0]
+        else:
+            status['loggedIn'] = True
 
-        req = self.session.get(url, headers=self.headers)
-        soup = BeautifulSoup(req.content, "html.parser")
+        return status
 
-        return soup
+    def get_session_token(self, url=None):
+        result = self.session.get(url, headers=self.headers)
+        tree = html.fromstring(result.content)
+        token = list(set(tree.xpath("//input[@name='csrfmiddlewaretoken']/@value")))[0]
+        return token
 
-    def search(self, search_word):
 
-        # Need better exception handling if not logged in
+    def get_search_results(self, raw_result):
+        result_list = []
+        tree = html.fromstring(raw_result.content)
+        bucket_elems = tree.findall(".//div[@class='box-content']/")[0]
+        sub = bucket_elems.findall('tbody')[0]
+        for submission in sub.findall('tr'):
+            html_objs = submission.findall('td')
+            link_url = html_objs[1].xpath('//td/a')[0].attrib['href']
+            elements = [elem.text_content().replace("\n", "").strip() for elem in html_objs]
+            objs_to_add = {
+                'submission_time': elements[0],
+                'hash': elements[1],
+                'submission_url': link_url,
+                'file_name': elements[2]
+            }
+            result_list.append(objs_to_add)
+
+        return result_list
+
+    def search (self, search_word=None):
         if not self.logged:
-            return []
-
+            self.logger.warn ("MalwrApi::You must login using your username and password")
+            return
         search_url = self.url + '/analysis/search/'
-        c = self.request_to_soup(search_url)
-
-        csrf_input = c.find(attrs=dict(name='csrfmiddlewaretoken'))
-        csrf_token = csrf_input['value']
+        csrf_token = self.get_session_token(search_url)
         payload = {
             'csrfmiddlewaretoken': csrf_token,
-            'search': u'{}'.format(search_word)
+            'search': search_word
         }
-        sc = self.session.post(search_url, data=payload, headers=self.headers)
-        ssc = BeautifulSoup(sc.content, "html.parser")
+        raw_result = self.session.post(search_url,
+                                       data=payload,
+                                       headers=self.headers)
+        return self.get_search_results(raw_result)
 
-        res = []
-        submissions = ssc.findAll('div', {'class': 'box-content'})[0]
-        sub = submissions.findAll('tbody')[0]
-        for submission in sub.findAll('tr'):
-            infos = submission.findAll('td')
-            infos_to_add = {
-                'submission_time': infos[0].string,
-                'hash': infos[1].find('a').string,
-                'submission_url': infos[1].find('a')['href'],
-                'file_name': infos[2].string
-            }
-            res.append(infos_to_add)
 
-        return res

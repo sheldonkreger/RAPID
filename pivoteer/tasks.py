@@ -315,7 +315,7 @@ def malwr_ip_domain_search(indicator):
     mw_logger = logging.getLogger(None)
     api_id = settings.MALWR_LOGIN_ID
     api_secret = settings.MALWR_LOGIN_SECRET
-    mw = MalwrApi(verbose=True, username=api_id, password=api_secret)
+    mw = MalwrApi(username=api_id, password=api_secret)
     if valid_ipv6(indicator) or valid_ipv4(indicator):
         query = "ip:" + indicator
     else:
