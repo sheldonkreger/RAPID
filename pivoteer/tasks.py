@@ -286,7 +286,6 @@ def malware_samples(indicator, record_source):
                              record_type.title,
                              record_source.title)
 
-
 @app.task
 def google_safebrowsing(indicator):
     record_type = RecordType.SB
