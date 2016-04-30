@@ -203,6 +203,22 @@ def google_for_indicator(indicator, limit=10, domain=None):
 
 
 def lookup_certs_censys(other, count):
+    """Search the Censys.io API for any certificates that contain the search string
+    
+        Args:
+            other (str): The string to search for in certificates (named other referencing
+                the 'other' indicator type
+            count (int): The maximum number of records to retrieve
+            
+        Returns (dict):
+            Returns a dictionary that contains the following keys:
+                records (list): A list of the certificates that matched this search string
+                total (int): The total number of certificates that match this search
+                count (int): The number of records being returned by this search
+            If an error occurs while accessing the api, the dictionary will have the following keys:
+                status (int): The status code of the error
+                message (str): The error message
+    """
     api_id = settings.CENSYS_API_ID
     api_secret = settings.CENSYS_API_SECRET
 
