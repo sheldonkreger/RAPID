@@ -25,6 +25,7 @@ apt-get install -y libxml2-dev
 apt-get install -y libxslt-dev
 apt-get install -y lib32z1-dev
 apt-get install -y python3-lxml
+apt-get build-dep -y python3-lxml
 
 echo "Prerequisites installed"
 
