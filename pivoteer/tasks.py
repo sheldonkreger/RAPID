@@ -22,13 +22,6 @@ from .models import IndicatorRecord
 
 logger = logging.getLogger(None)
 
-# Temporary fix to avoid :
-#   RuntimeError: maximum recursion depth exceeded while getting the str of an object
-# TODO: Convert recursion method to iterator if possible. Subject method might be: core.utilities::scrape_attribute
-# This error is thrown intermittently
-sys.setrecursionlimit(10000)
-
-
 def create_record(record_type,
                   record_source,
                   info,
