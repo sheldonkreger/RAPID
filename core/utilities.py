@@ -85,3 +85,23 @@ def get_base_domain(submission):
         return domain_name
 
     return None
+
+def scrape_attribute(search_dict, field):
+    fields_found = []
+    if isinstance(search_dict, dict):
+        for k, v in search_dict.items():
+            if k == field:
+                fields_found.append(v)
+            elif isinstance(v, dict):
+                results = scrape_attribute(v, field)
+                for result in results:
+                    fields_found.append(result)
+            elif isinstance(v, list):
+                for item in v:
+                    if isinstance(item, dict):
+                        more_results = scrape_attribute(item, field)
+                        for another_result in more_results:
+                            fields_found.append(another_result)
+    return fields_found
+
+

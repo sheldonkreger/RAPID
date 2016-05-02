@@ -20,6 +20,13 @@ apt-get install -y rabbitmq-server
 apt-get install -y python3-all-dev
 apt-get install -y python3-pip
 apt-get install -y libpq-dev
+
+apt-get install -y libxml2-dev
+apt-get install -y libxslt-dev
+apt-get install -y lib32z1-dev
+apt-get install -y python3-lxml
+apt-get build-dep -y python3-lxml
+
 echo "Prerequisites installed"
 
 cd $APPLICATION_DIR

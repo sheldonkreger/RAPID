@@ -148,22 +148,3 @@ class TotalHashApi:
 
     def get_signature(self, query):
         return hmac.new(self.key.encode('utf-8'), msg=query.encode('utf-8'), digestmod=hashlib.sha256).hexdigest()
-
-    @staticmethod
-    def scrape_hash(search_dict, field):
-        fields_found = []
-        if isinstance(search_dict, dict):
-            for k, v in search_dict.items():
-                if k == field:
-                    fields_found.append(v)
-                elif isinstance(v, dict):
-                    results = TotalHashApi.scrape_hash(v, field)
-                    for result in results:
-                        fields_found.append(result)
-                elif isinstance(v, list):
-                    for item in v:
-                        if isinstance(item, dict):
-                            more_results = TotalHashApi.scrape_hash(item, field)
-                            for another_result in more_results:
-                                fields_found.append(another_result)
-        return fields_found

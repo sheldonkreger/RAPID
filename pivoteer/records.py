@@ -72,5 +72,6 @@ class RecordSource(__TitledEnum):
     TEX = "Threat Expert"
     THR = "ThreatCrowd"
     THS = "Total Hash"
+    MWS = "Malwr"
     VTO = "Virus Total"
     WIS = "WHOIS"
