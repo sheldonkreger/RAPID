@@ -58,8 +58,18 @@ def check_domain_valid(submission):
 
 
 def discover_type(submission):
-    """
-    Figure out type of indicator a submission is
+    """Figure out type of indicator a submission is
+    
+    Valid types are:
+        ip: If the string matches an ipv4 string (i.e. '1.2.3.4')
+        domain: If the string matches a valid domain name (i.e. 'www.domain.com')
+        other: Any string that does not match one of the others.
+    
+    Args:
+        submission (str): The indicator to check the type against
+    
+    Returns (str): The indicator type: 'ip', 'domain', or 'other'
+    
     """
     if check_ip_valid(submission):
         return "ip"

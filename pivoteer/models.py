@@ -22,6 +22,17 @@ class IndicatorManager(models.Manager):
         return records
 
     def recent_cert(self, indicator):
+        """Retrieve the most recent censys.io certificate result for the provided indicator
+        
+            Args:
+                indicator (str): The indicator to search for
+            
+            Returns (IndicatorRecord): The IndicatorRecord for the most recently saved
+                result for the provided indicator or an empty query set if no record was found.
+        """
+        
+        # TODO: Why are we returning empty query sets versus None when there are no results?
+        
         record_type = RecordType.CE
         time_frame = datetime.datetime.utcnow() + datetime.timedelta(hours=-24)
 
@@ -34,6 +45,14 @@ class IndicatorManager(models.Manager):
         return records
 
     def recent_tc(self, indicator):
+        """Retrieve the most recent ThreatCrowd record for the provided indicator
+        
+            Args:
+                indicator (str): The indicator to search for
+            
+            Returns (IndicatorRecord): The indicator record for the most recently saved
+                result for the provided indicator.
+        """
         record_type = RecordType.TR
         time_frame = datetime.datetime.utcnow() + datetime.timedelta(hours=-24)
 
