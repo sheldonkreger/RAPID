@@ -85,9 +85,9 @@ class MalwrApi(object):
         tree = html.fromstring(raw_result.content)
         bucket_elems = tree.findall(".//div[@class='box-content']/")[0]
         sub = bucket_elems.findall('tbody')[0]
-        for submission in sub.findall('tr'):
+        for idx, submission in enumerate(sub.findall('tr'), start=0):
             html_objs = submission.findall('td')
-            link_url = html_objs[1].xpath('//td/a')[0].attrib['href']
+            link_url = html_objs[0].xpath('//td/a')[idx].attrib['href']
             elements = [elem.text_content().replace("\n", "").strip() for elem in html_objs]
             objs_to_add = {
                 'submission_time': elements[0],
