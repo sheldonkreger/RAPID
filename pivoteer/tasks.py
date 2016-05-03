@@ -71,6 +71,13 @@ def save_record(record_type,
 
 
 @app.task
+def empty_task(indicator):
+    """Task that does nothing, because a tab with no task won't load.
+    """
+    pass
+
+
+@app.task
 def certificate_cen(indicator):
     record_type = RecordType.CE
     record_source = RecordSource.CEN
