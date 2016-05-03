@@ -93,9 +93,3 @@ class PivoteerSubmissionForm(TestCase):
         form.is_valid()
         task = form.create_new_task(time)
         self.assertIsNotNone(task)
-
-
-
-
-
-
