@@ -6,7 +6,7 @@ from django.test import TestCase
 class PivoteerSubmissionForm(TestCase):
 
     indicator = "twitter.com"
-
+    ip_indicator = "199.59.150.7"
     def test_valid_submission_form(self):
         post = {}
         post['indicator'] = self.indicator
@@ -82,10 +82,70 @@ class PivoteerSubmissionForm(TestCase):
         self.assertIsNotNone(lookup)
         self.assertEquals(lookup.date, time_new)
 
-    def test_create_new_task(self):
+    def test_create_new_search_task(self):
         post = {}
         post['indicator'] = self.indicator
         post['record_type'] = "Search"
+        form = SubmissionForm(post)
+        time = datetime.datetime.utcnow()
+
+        # Required for normalizing form data in Django.
+        form.is_valid()
+        task = form.create_new_task(time)
+        self.assertIsNotNone(task)
+
+    def test_create_new_recent_task(self):
+        post = {}
+        post['indicator'] = self.indicator
+        post['record_type'] = "Recent"
+        form = SubmissionForm(post)
+        time = datetime.datetime.utcnow()
+
+        # Required for normalizing form data in Django.
+        form.is_valid()
+        task = form.create_new_task(time)
+        self.assertIsNotNone(task)
+
+    def test_create_new_recent_task_with_ip(self):
+        post = {}
+        post['indicator'] = self.ip_indicator
+        post['record_type'] = "Recent"
+        form = SubmissionForm(post)
+        time = datetime.datetime.utcnow()
+
+        # Required for normalizing form data in Django.
+        form.is_valid()
+        task = form.create_new_task(time)
+        self.assertIsNotNone(task)
+
+    def test_create_new_historical_task(self):
+        post = {}
+        post['indicator'] = self.indicator
+        post['record_type'] = "Historical"
+        form = SubmissionForm(post)
+        time = datetime.datetime.utcnow()
+
+        # Required for normalizing form data in Django.
+        form.is_valid()
+        task = form.create_new_task(time)
+        self.assertIsNotNone(task)
+
+    def test_create_new_malware_task(self):
+        post = {}
+        post['indicator'] = self.indicator
+        post['record_type'] = "Malware"
+        form = SubmissionForm(post)
+        time = datetime.datetime.utcnow()
+
+        # Required for normalizing form data in Django.
+        form.is_valid()
+        task = form.create_new_task(time)
+        self.assertIsNotNone(task)
+
+    def test_create_new_safebrowsing_task(self):
+        post = {}
+        post['indicator'] = self.indicator
+        post['record_type'] = "SafeBrowsing"
         form = SubmissionForm(post)
         time = datetime.datetime.utcnow()
 
