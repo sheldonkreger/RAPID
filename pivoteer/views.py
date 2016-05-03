@@ -11,7 +11,7 @@ from django.core.exceptions import ObjectDoesNotExist, MultipleObjectsReturned
 
 from .forms import SubmissionForm
 from .models import IndicatorRecord, TaskTracker
-from core.utilities import time_jump
+from core.utilities import time_jump, discover_type
 from core.lookups import geolocate_ip
 from celery.result import GroupResult
 from braces.views import LoginRequiredMixin
@@ -176,6 +176,11 @@ class CheckTask(LoginRequiredMixin, View):
             self.template_name = "pivoteer/SearchRecords.html"
             search_records = IndicatorRecord.objects.get_search_records(indicator)
             self.template_vars["search_records"] = search_records
+            
+        elif record_type == "External":
+            self.template_name = "pivoteer/ExternalRecords.html"
+            self.template_vars['indicator'] = indicator
+            self.template_vars['type'] = discover_type(indicator)
 
         return render(request, self.template_name, self.template_vars)
 

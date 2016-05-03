@@ -11,7 +11,7 @@ function kill_ajax() {
 // Submit for all records
 function run_records(form_data) {
 
-    var records = [ "Recent", "Historical", "Malware", "SafeBrowsing", "Search" ];
+    var records = [ "Recent", "Historical", "Malware", "SafeBrowsing", "Search", "External" ];
 
     $.each(records, function( index, record ) {
         // Clear out old information from DOM elements and submit new ajax requests
@@ -140,7 +140,7 @@ function initialize_table(record_element) {
             "bLengthChange":   false,
             "bSort":           false
         })
-    }
+    } 
 }
 
 
