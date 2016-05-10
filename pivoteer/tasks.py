@@ -1,13 +1,17 @@
 from __future__ import absolute_import
+import sys
 from netaddr import *
 
 import datetime, logging, json
+from dateutil.parser import parse
 import dpath.util
 from collections import OrderedDict
 from django.conf import settings
 from RAPID.celery import app
+from core.utilities import scrape_attribute
 from core.threatcrowd import ThreatCrowd
 from core.totalhash import TotalHashApi
+from core.malwr import MalwrApi
 from core.lookups import lookup_ip_whois, lookup_domain_whois, resolve_domain, geolocate_ip, lookup_ip_censys_https, \
     lookup_google_safe_browsing, lookup_certs_censys, google_for_indicator, LookupException
 from pivoteer.collectors.scrape import RobtexScraper, InternetIdentityScraper
@@ -17,7 +21,6 @@ from pivoteer.records import RecordSource, RecordType
 from .models import IndicatorRecord
 
 logger = logging.getLogger(None)
-
 
 def create_record(record_type,
                   record_source,
@@ -65,6 +68,13 @@ def save_record(record_type,
                 record_type.title,
                 record_source.title)
     return record
+
+
+@app.task
+def empty_task(indicator):
+    """Task that does nothing, because a tab with no task won't load.
+    """
+    pass
 
 
 @app.task
@@ -280,7 +290,6 @@ def malware_samples(indicator, record_source):
                              record_type.title,
                              record_source.title)
 
-
 @app.task
 def google_safebrowsing(indicator):
     record_type = RecordType.SB
@@ -299,6 +308,55 @@ def google_safebrowsing(indicator):
                          record_type.name,
                          record_type.title,
                          record_source.title)
+
+
+# Task to look up malwr ip or domain search terms
+@app.task
+def malwr_ip_domain_search(indicator):
+    record_type = RecordType.MR
+    record_source = RecordSource.MWS
+    mw_logger = logging.getLogger(None)
+    api_id = settings.MALWR_LOGIN_ID
+    api_secret = settings.MALWR_LOGIN_SECRET
+    mw = MalwrApi(username=api_id, password=api_secret)
+    if valid_ipv6(indicator) or valid_ipv4(indicator):
+        query = "ip:" + indicator
+    else:
+        query = "domain:" + indicator
+
+    raw_record = mw.search(search_word=query);
+
+    if len(raw_record) > 0:
+        try:
+            mw_logger.info("Retrieved Malwr data for query %s Data: %s" % (query, raw_record))
+
+            for entry in raw_record:
+                m_hash_link = "https://malwr.com" + entry['submission_url']
+                submission_time = parse(entry['submission_time'])
+                info = OrderedDict({"sha1": entry['hash'],
+                                    "indicator": indicator,
+                                    "link": m_hash_link,
+                                    "md5": "",
+                                    "sha256": ""})
+                save_record(record_type,
+                            record_source,
+                            info,
+                            date=submission_time)
+
+            logger.info("%s %s for %s saved successfully",
+                        len(raw_record),
+                        record_type.title,
+                        record_source.title)
+
+
+        except Exception:
+            logger.exception("Error saving %s (%s) record from %s",
+                             record_type.name,
+                             record_type.title,
+                             record_source.title)
+    else:
+        mw_logger.info("No Malwr data, save aborted")
+
 
 
 # Task to look up totalhash ip or domain search terms
@@ -329,7 +387,7 @@ def totalhash_ip_domain_search(indicator):
             # Adding to malware records, # key 'text' contains actual hash
             # We must include md5 and sha256 even though this task doesn't gather values for them.
             # Otherwise, some record retrieval methods may fail.
-            for entry in th.scrape_hash(raw_record, 'text'):
+            for entry in scrape_attribute(raw_record, 'text'):
                 hash_link = "https://totalhash.cymru.com/analysis/?" + entry
                 info = OrderedDict({"sha1": entry,
                                     "indicator": indicator,

@@ -79,7 +79,8 @@ class SubmissionForm(forms.Form):
             if self.indicator_type != "other":
                 new_task = group([malware_samples.s(indicator, RecordSource.TEX),
                                   malware_samples.s(indicator, RecordSource.VTO),
-                                  totalhash_ip_domain_search.s(indicator)])()
+                                  totalhash_ip_domain_search.s(indicator),
+                                  malwr_ip_domain_search.s(indicator)])()
             else:
                 new_task = None
 
@@ -91,6 +92,9 @@ class SubmissionForm(forms.Form):
 
         elif record_type == "Search":
             new_task = group([make_indicator_search_records.s(indicator, self.indicator_type)])()
+
+        elif record_type == "External":
+            new_task = group([empty_task.s(indicator)])()
 
         else:
             new_task = None
