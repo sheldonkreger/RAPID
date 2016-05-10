@@ -194,8 +194,6 @@ class IndicatorManagerValues(TestCase):
             self.assertTrue("https_cert" in record.info)
             self.assertTrue("ip" in record.info)
 
-
-    # # Fix this
     def test_passive_hosts(self):
         record_type = RecordType.HR
         record_source = RecordSource.REX
