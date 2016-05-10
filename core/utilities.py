@@ -45,16 +45,12 @@ def check_email_valid(submission):
 
 def check_domain_valid(submission):
     """
-    Check if submission is a valid domain
-    """
-    ext = tldextract.extract(submission)
-    tld = ext.tld
-    domain = ext.domain
+    Check if a submission is a valid domain.
 
-    if tld and domain:
-        return True
-    else:
-        return False
+    :param submission: The submission to be checked
+    :return: True if 'submission' is a valid domain, otherwise False
+    """
+    return re.match(r"([A-Za-z0-9-]+(?:\\.[A-Za-z0-9-]+)*(?:\\.[A-Za-z]{2,}))", submission) is not None
 
 
 def discover_type(submission):
