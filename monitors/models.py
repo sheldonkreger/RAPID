@@ -1,6 +1,7 @@
 from django.db import models
 from django.conf import settings
 from django.contrib.postgres.fields import ArrayField
+from django_pgjson.fields import JsonField
 
 
 class IndicatorLookupBase(models.Model):
@@ -31,6 +32,32 @@ class IpMonitor(IndicatorLookupBase):
 
     class Meta:
         unique_together = (('owner', 'ip_address'),)
+
+
+class CertificateMonitor(IndicatorLookupBase):
+    """
+    A lookup monitor for certificate indicators.
+
+    This class extends IndicatorLookupBase, adding the field 'certificate_value' for the indicator value as a primary
+    key. As with all indicator lookups, the combination of indicator value and owner must be unique.
+    """
+
+    certificate_value = models.CharField(max_length=1000, primary_key=True)
+    """The certificate fragment to be monitored"""
+
+    resolutions = JsonField()
+    """
+    The full resolutions.  Here is the basic structure of this field:
+
+    { <ip>: { "geo_location": <location>, "country": <code>, "domains": [ <domain>, ...] } }
+    """
+
+    class Meta:
+        """
+        A metaclass for Certificate Monitor that specifies that the combination of 'owner' (the person submitting the
+        monitor) and 'certificate_value' (the indicator value) must be unique.
+        """
+        unique_together = (('owner', 'certificate_value'),)
 
 
 class IndicatorAlert(models.Model):
