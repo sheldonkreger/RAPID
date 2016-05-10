@@ -1,3 +1,5 @@
+# Important: This module is NOT implemented with support for Python 2.x
+
 import unittest
 import os
 import logging
@@ -5,19 +7,103 @@ import tldextract
 import pythonwhois
 import dns.resolver
 import geoip2.database
+import censys.base
 import core.google
+import pycountry
 import urllib.request
 from ipwhois import IPWhois
 from collections import OrderedDict
 from ipwhois.ipwhois import IPDefinedError
 from censys.ipv4 import CensysIPv4
 from censys.certificates import CensysCertificates
-from censys.base import CensysException
 from django.conf import settings
 
 
 logger = logging.getLogger(__name__)
 current_directory = os.path.dirname(__file__)
+
+
+class LookupException(Exception):
+    """
+    An exception used to indicate an error performing a lookup.
+    """
+
+    def __init__(self, message, cause=None):
+        """
+        Create a new exception with the given message.
+
+        The message is required.  A cause may also optionally be provided.  This allows you to easily preserve the
+        original cause of the exception, if available.   Instances have two read-only members readily available:
+            message: A detail message
+            cause: The exception that caused this exception (may be None)
+
+        Note that in Python 3, you can easily indicate a causal exception:
+        try:
+            ...
+        except SomeException as e:
+            raise LookupException(message, e) from e
+
+        In Python 2 it's not quite as easy:
+        try:
+            ...
+        except SomeException as e:
+            trace = sys.exc_info()[2]
+            raise LookupException(message, e, trace)
+
+        :param message: The detail message for this exception
+        :param cause: The
+        """
+        super(LookupException, self).__init__()
+        self._message = message
+        self._cause = cause
+
+    @property
+    def message(self):
+        return self._message
+
+    @property
+    def cause(self):
+        return self._cause
+
+
+def get_country_code(name):
+    """
+    Convert the name of a country to the ISO-3166 country code.
+
+    The name should be a long value (e.g. "United States") such as the value in the "country" key of the dictionary
+    returned by 'geolocate_ip.'  In this example, this function would return 'US.'
+
+    :param name: The country name
+    :return: The country code (a two-character string)
+    :raises KeyError: If 'name' is not a valid country name
+    """
+    # Known "Gotchas":
+    #   - "Slovakia" vs. "Slovak Republic": This is why we do the 'opts' approach with name and official name
+    #   - "Russia" vs. "Russian Federation": This is why we do the 'contains' approach
+    #   - "Vietnam" vs. "Viet Nam": The actual name is the latter.  You're just out of luck on this one.
+    code = None
+    for country in pycountry.countries:
+        opts = [country.name]
+        try:
+            opts.append(country.official_name)
+        except AttributeError:
+            # There is no official name for this country
+            pass
+        if name in opts:
+            code = country.alpha2
+        else:
+            for opt in opts:
+                if name in opt:
+                    code = country.alpha2
+                    break
+        if code is not None:
+            break
+    logger.debug("Country code for '%s' is '%s'", name, code)
+    if code is None:
+        msg = "No code available for country '%s'" % name
+        logger.warn(msg)
+        raise KeyError(msg)
+    return code
 
 
 def geolocate_ip(ip):
@@ -47,32 +133,49 @@ def geolocate_ip(ip):
 
 
 def resolve_domain(domain):
+    """
+    Resolve a domain to a list of IP addresses.
+
+    This method will use the Google public DNS servers to perform the resolution.  If successful, a list of IP addresses
+    is returned.  If an error occurs, a LookupException is thrown.
+    :param domain:
+    :return:
+    """
 
     # Set resolver to Google openDNS servers
     resolver = dns.resolver.Resolver()
     resolver.nameservers = ['8.8.8.8', '8.8.4.4']
+    errmsg = "Error resolving domain '%s': " % domain
 
     try:
         query_answer = resolver.query(qname=domain)
         answer = [raw_data.address for raw_data in query_answer]
         return answer
 
-    except dns.resolver.NXDOMAIN:
-        alert = "NX Domain"
+    except dns.resolver.NXDOMAIN as e:
+        errmsg += "NX Domain"
+        logger.exception(errmsg)
+        raise LookupException(errmsg, e) from e
 
-    except dns.resolver.Timeout:
-        alert = "Query Timeout"
+    except dns.resolver.Timeout as e:
+        errmsg += "Query Timeout"
+        logger.exception(errmsg)
+        raise LookupException(errmsg, e) from e
 
-    except dns.resolver.NoAnswer:
-        alert = "No Answer"
+    except dns.resolver.NoAnswer as e:
+        errmsg += "No Answer"
+        logger.exception(errmsg)
+        raise LookupException(errmsg, e) from e
 
-    except dns.resolver.NoNameservers:
-        alert = "No Name Server"
+    except dns.resolver.NoNameservers as e:
+        errmsg += "No Name Server"
+        logger.exception(errmsg)
+        raise LookupException(errmsg, e) from e
 
-    except Exception:
-        alert = "Unexpected error"
-
-    return [alert]
+    except Exception as e:
+        errmsg += "Unexpected error"
+        logger.exception(errmsg)
+        raise LookupException(errmsg, e) from eTha
 
 
 def lookup_domain_whois(domain):
@@ -155,7 +258,7 @@ def lookup_ip_censys_https(ip):
         return ip_data['443']['https']['tls']['certificate']['parsed']
     except KeyError:
         return {'status': 404, 'message': "No HTTPS certificate data was found for IP " + ip}
-    except CensysException as ce:
+    except censys.base.CensysException as ce:
         return {'status': ce.status_code, 'message': ce.message}
 
 
@@ -221,5 +324,52 @@ def lookup_certs_censys(other, count):
                 break
         results['count'] = i
         return results
-    except CensysException as ce:
+    except censys.base.CensysException as ce:
         return {'status':ce.status_code,'message':ce.message}
+
+
+def search_ip_for_certificate(value):
+    """
+    A generator that uses the Census IPv4 API to identify all currently resolving IP addresses for a certificate value.
+
+    :param value: The certificate value for which to search
+    :return: The IP addresses
+    :raises LookupException: If there was an error performing the lookup
+    """
+    try:
+        api = CensysIPv4(api_id=settings.CENSYS_API_ID, api_secret=settings.CENSYS_API_SECRET)
+        logger.info("Searching for certificate value: %s", value)
+        total = 0
+        for result in api.search(query=value, fields=["ip"]):
+            total += 1
+            yield result["ip"]
+        logger.info("Found %d total result(s) for certificate value: %s", total, value)
+    except censys.base.CensysRateLimitExceededException as e:
+        msg = "Censys rate limit exceeded"
+        logger.exception(msg)
+        raise LookupException(msg, e) from e
+    except censys.base.CensysUnauthorizedException as e:
+        msg = "Censys authorization failed"
+        logger.exception(msg)
+        raise LookupException(msg, e) from e
+    except censys.base.CensysNotFoundException as e:
+        msg = "Certificate fragment not found in Censys: %s" % value
+        logger.exception(msg)
+        raise LookupException(msg, e) from e
+    except Exception as e:
+        msg = "Unknown error searching for certificate: %s" % value
+        logger.exception(msg)
+        raise LookupException(msg, e) from e
+
+
+def accumulate_ip_for_certificate(value):
+    """
+    A convenience function that wraps the results of 'search_ip_for_certificate' into a Python list.
+
+    :param value: The certificate value for which to search
+    :return: The list of IP addresses
+    :raises LookupException: If there was an error performing the lookup
+    """
+    results = list(search_ip_for_certificate(value))
+    logger.info("Found %d total result(s) for certificate search value: %s", len(results), value)
+    return results
