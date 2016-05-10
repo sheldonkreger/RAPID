@@ -9,7 +9,7 @@ from RAPID.celery import app
 from core.threatcrowd import ThreatCrowd
 from core.totalhash import TotalHashApi
 from core.lookups import lookup_ip_whois, lookup_domain_whois, resolve_domain, geolocate_ip, lookup_ip_censys_https, \
-    lookup_google_safe_browsing, lookup_certs_censys, google_for_indicator
+    lookup_google_safe_browsing, lookup_certs_censys, google_for_indicator, LookupException
 from pivoteer.collectors.scrape import RobtexScraper, InternetIdentityScraper
 from pivoteer.collectors.scrape import VirusTotalScraper, ThreatExpertScraper
 from pivoteer.collectors.api import PassiveTotal
@@ -168,7 +168,11 @@ def ip_whois(ip_address):
 
 @app.task
 def domain_hosts(domain):
-    hosts = resolve_domain(domain)
+    try:
+        hosts = resolve_domain(domain)
+    except LookupException as e:
+        logger.error("Error performing domain resolution for domain '%s': %s", domain, e.message)
+        return
     if type(hosts) == list:
         record_type = RecordType.HR
         record_source = RecordSource.DNS
