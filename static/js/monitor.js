@@ -149,4 +149,13 @@ $(document).on( "click", "button[data-toggle=modal]", function() {
         $(target).find('.selectpicker').selectpicker();
     });
 });
+
+$(document).on( "click", "a[data-toggle=modal]", function() {
+    // Grab reference to link within event context
+    var link = $(this).attr("data-link");
+    var target = $(this).attr("data-target");
+    $(target).find(".modal-body").load(link, function() {
+        console.log("I don't think we need to do anything here. It's a callback once loading is complete.");
+    });
+});
 // End modal functions and events //
