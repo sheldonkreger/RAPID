@@ -1,8 +1,11 @@
 import csv
 
+import core.lookups
 import datetime
+import django.template
+import logging
 from django.views.generic import TemplateView, ListView, FormView, View
-from django.shortcuts import get_object_or_404, render
+from django.shortcuts import render
 from django.http import HttpResponse
 from django.shortcuts import redirect
 from django.core.urlresolvers import reverse
@@ -12,12 +15,23 @@ from django.contrib.auth import get_user_model
 
 from core.utilities import discover_type
 
-from .models import DomainMonitor, IpMonitor, IndicatorAlert, IndicatorTag
-from .forms import MonitorSubmission
+from django.forms.utils import ErrorDict
+
+from .models import CertificateMonitor, DomainMonitor, IpMonitor, IndicatorAlert, IndicatorTag
+from .forms import MonitorSubmission, CertificateSubmission
 
 from braces.views import LoginRequiredMixin
 
+LOGGER = logging.getLogger(__name__)
+"""The logger for this module"""
+
 User = get_user_model()
+
+
+# This line creates a new Django template filter for accessing a dictionary key.  Assuming that you have a variable
+# 'dict' within a template and want to access the value stored under 'foo,' you would use it like this:
+#     {{ dict|key:"foo" }}
+django.template.Library().filter("key", lambda d, key: d[key])
 
 
 class MonitorDashboard(LoginRequiredMixin, TemplateView):
@@ -54,6 +68,24 @@ class IpList(LoginRequiredMixin, ListView):
         return ips
 
 
+class CertificateList(LoginRequiredMixin, ListView):
+    """
+    A list view of certificate monitors.
+
+    Within the Django HTML template (defined in monitors/certificate.html), the query set of CertificateMonitor objects
+    will be available as "monitored_certificates."
+
+    Login is required in order to use this view.
+    """
+    login_url = "login"
+    redirect_unauthenticated_users = True
+    context_object_name = 'monitored_certificates'
+    template_name = 'monitors/certificate.html'
+
+    def get_queryset(self):
+        return CertificateMonitor.objects.filter(owner=self.request.user)
+
+
 class AlertList(LoginRequiredMixin, ListView):
     login_url = "login"
     redirect_unauthenticated_users = True
@@ -69,15 +101,14 @@ class AlertList(LoginRequiredMixin, ListView):
 
 
 class AddIndicator(LoginRequiredMixin, FormView):
-
     login_url = "login"
     redirect_unauthenticated_users = True
 
     form_class = MonitorSubmission
     template_name = "monitors/add.html"
 
-    msg_success = "Indicators added for monitoring"
-    msg_failure = "No indicators added for monitoring"
+    msg_success = "Indicator(s) added for monitoring"
+    msg_failure = "No indicator(s) added for monitoring"
 
     def get_success_url(self):
         return reverse('monitor_dashboard')
@@ -88,8 +119,19 @@ class AddIndicator(LoginRequiredMixin, FormView):
         return super(AddIndicator, self).form_valid(form)
 
     def form_invalid(self, form):
+        for elist in form.errors.as_data().values():
+            for e in elist:
+                messages.add_message(self.request, messages.ERROR, e.message)
         messages.add_message(self.request, messages.WARNING, self.msg_failure)
         return redirect('monitor_dashboard')
+
+
+class AddCertificate(AddIndicator):
+    """
+    A view for adding a new certificate monitor
+    """
+    form_class = CertificateSubmission
+    template_name = "monitors/add_certificate.html"
 
 
 class DeleteIndicator(LoginRequiredMixin, View):
@@ -119,6 +161,13 @@ class DeleteIndicator(LoginRequiredMixin, View):
                 try:
                     IpMonitor.objects.get(ip_address=indicator,
                                           owner=request.user).delete()
+                except:
+                    pass
+
+            if indicator_type == "other":
+                try:
+                    CertificateMonitor.objects.get(certificate_value=indicator,
+                                                   owner=request.user).delete()
                 except:
                     pass
 
@@ -174,6 +223,16 @@ class TagIndicator(LoginRequiredMixin, View):
                         for tag in tags:
                             monitor.tags.add(tag)
 
+                if indicator_type == "other":
+                    try:
+                        monitor = CertificateMonitor.objects.get(certificate_value=indicator,
+                                                                 owner=request.user)
+                    except:
+                        pass
+                    else:
+                        for tag in tags:
+                            monitor.tags.add(tag)
+
         messages.add_message(request, messages.SUCCESS, self.msg_success)
         return redirect('monitor_dashboard')
 
@@ -220,6 +279,15 @@ class UntagIndicator(LoginRequiredMixin, View):
                 else:
                     monitor.tags.clear()
 
+            if indicator_type == "other":
+                try:
+                    monitor = CertificateMonitor.objects.get(certificate_value=indicator,
+                                                             owner=request.user)
+                except:
+                    pass
+                else:
+                    monitor.tags.clear()
+
         messages.add_message(request, messages.SUCCESS, self.msg_success)
         return redirect('monitor_dashboard')
 
@@ -229,6 +297,7 @@ class UntagIndicator(LoginRequiredMixin, View):
 
 @login_required(login_url='login')
 def export_indicators(request):
+    # TODO: Update export for certificates
 
     filtering = request.GET.get('filter', '')
 
