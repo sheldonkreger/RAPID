@@ -448,7 +448,7 @@ class IndicatorMonitoring(PeriodicTask):
         """
         type_name = subtask.get_type_name()
         lookup_type = subtask.get_lookup_type()
-        LOGGER.info("Running monitor lookups for %s indicators...", type_name)
+        LOGGER.debug("Running monitor lookups for %s indicators...", type_name)
 
         # Time values
         start_timestamp = datetime.datetime.utcnow()
@@ -457,7 +457,8 @@ class IndicatorMonitoring(PeriodicTask):
 
         # Retrieve the lookups (monitors) from the database and iterate over them...
         lookups = self.get_lookups(lookup_type=lookup_type, current_time=current_time)
-        LOGGER.info("Found %d %s lookups to be processed...", len(lookups), type_name)
+        if LOGGER.isEnabledFor(logging.INFO) and len(lookups) > 0:
+            LOGGER.info("Found %d %s lookups to be processed...", len(lookups), type_name)
         for lookup in lookups:
             indicator = subtask.get_indicator_value(lookup)
             owner = lookup.owner
@@ -524,15 +525,11 @@ class IndicatorMonitoring(PeriodicTask):
             %s lookup performed at %s has detected changes in the resolution of tracked %s value '%s':\n
             """ % (type_name, current_time, type_name, sanitized_value)
             if missing_hosts:
-                # TODO: Somebody got the bright idea to limit 'alert_text' to 100 characters in the DB!
-                alert_text = "Removed hosts: %s" % ", ".join(missing_hosts)
-                # alert_text = 'Removed hosts: %s' % ', '.join(subtask.list_hosts(lookup, hosts=missing_hosts))
+                alert_text = 'Removed hosts: %s' % ', '.join(subtask.list_hosts(lookup, hosts=missing_hosts))
                 self.create_alert(indicator=indicator, alert_text=alert_text, owner=owner)
                 body += "\tDropped hosts: %s\n" % subtask.list_hosts(lookup, hosts=missing_hosts, sanitized=True)
             if new_hosts:
-                # TODO: Somebody got the bright idea to limit 'alert_text' to 100 characters in the DB!
-                alert_text = "Added hosts: %s" % ", ".join(new_hosts)
-                # alert_text = "Added hosts: %s" % ", ".join(subtask.list_hosts(lookup, hosts=new_hosts))
+                alert_text = "Added hosts: %s" % ", ".join(subtask.list_hosts(lookup, hosts=new_hosts))
                 self.create_alert(indicator=indicator, alert_text=alert_text, owner=owner)
                 body += "\tAdded hosts: %s\n" % subtask.list_hosts(lookup, hosts=new_hosts, sanitized=True)
             self.send_email(indicator, subject, body, recipients)
