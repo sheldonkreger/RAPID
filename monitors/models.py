@@ -42,7 +42,7 @@ class CertificateMonitor(IndicatorLookupBase):
     key. As with all indicator lookups, the combination of indicator value and owner must be unique.
     """
 
-    certificate_value = models.CharField(max_length=1000, primary_key=True)
+    certificate_value = models.TextField(primary_key=True)
     """The certificate fragment to be monitored"""
 
     resolutions = JsonField()
@@ -64,10 +64,10 @@ class IndicatorAlert(models.Model):
     """
     Base model for indicator alerts
     """
-    indicator = models.CharField(max_length=253)
+    indicator = models.TextField()
     recipient = models.ForeignKey(settings.AUTH_USER_MODEL)
     created = models.DateTimeField(auto_now_add=True, editable=False)
-    message = models.CharField(max_length=100)
+    message = models.TextField()
 
 
 class IndicatorTag(models.Model):
