@@ -156,7 +156,7 @@ class DeleteIndicator(LoginRequiredMixin, View):
                     DomainMonitor.objects.get(domain_name=indicator,
                                               owner=request.user).delete()
                 except:
-                    pass
+                    LOGGER.exception("Error deleting domain monitor for value: %s", indicator)
 
             if indicator_type == "ip":
 
@@ -164,14 +164,14 @@ class DeleteIndicator(LoginRequiredMixin, View):
                     IpMonitor.objects.get(ip_address=indicator,
                                           owner=request.user).delete()
                 except:
-                    pass
+                    LOGGER.exception("Error deleting IP monitor for value: %s", indicator)
 
             if indicator_type == "other":
                 try:
                     CertificateMonitor.objects.get(certificate_value=indicator,
                                                    owner=request.user).delete()
                 except:
-                    pass
+                    LOGGER.exception("Error deleting certificate monitor for value: %s", indicator)
 
         messages.add_message(request, messages.SUCCESS, self.msg_success)
         return redirect('monitor_dashboard')
@@ -198,6 +198,7 @@ class TagIndicator(LoginRequiredMixin, View):
             for indicator in request.POST.getlist('choices'):
 
                 indicator_type = discover_type(indicator)
+                LOGGER.debug("Applying %d tag(s) to %s indicator: %s", len(tags), indicator_type, indicator)
 
                 if indicator_type == "domain":
 
@@ -205,11 +206,11 @@ class TagIndicator(LoginRequiredMixin, View):
                         monitor = DomainMonitor.objects.get(domain_name=indicator,
                                                             owner=request.user)
                     except:
-                        pass
+                        LOGGER.exception("Error retrieving domain indicator '%s'", indicator)
 
                     else:
-
                         for tag in tags:
+                            LOGGER.debug("Adding tag '%s' to domain value: %s", tag, indicator)
                             monitor.tags.add(tag)
 
                 if indicator_type == "ip":
@@ -218,11 +219,11 @@ class TagIndicator(LoginRequiredMixin, View):
                         monitor = IpMonitor.objects.get(ip_address=indicator,
                                                         owner=request.user)
                     except:
-                        pass
+                        LOGGER.exception("Error retrieving IP indicator '%s'", indicator)
 
                     else:
-
                         for tag in tags:
+                            LOGGER.debug("Adding tag '%s' to IP value: %s", tag, indicator)
                             monitor.tags.add(tag)
 
                 if indicator_type == "other":
@@ -230,9 +231,10 @@ class TagIndicator(LoginRequiredMixin, View):
                         monitor = CertificateMonitor.objects.get(certificate_value=indicator,
                                                                  owner=request.user)
                     except:
-                        pass
+                        LOGGER.exception("Error retrieving certificate indicator '%s'", indicator)
                     else:
                         for tag in tags:
+                            LOGGER.debug("Adding tag '%s' to certificate value: %s", tag, indicator)
                             monitor.tags.add(tag)
 
         messages.add_message(request, messages.SUCCESS, self.msg_success)
@@ -553,7 +555,7 @@ def _export_certificate_monitors(request, response):
     #        address is on a separate line.   This format will provide the most flexibility within a spreadsheet
     #        application such as Microsoft Excel.
     for monitor in monitors:
-        for record in _generate_simple_certificate_records(monitor):
+        for record in _generate_detail_certificate_records(monitor):
             writer.writerow(record)
 
 
