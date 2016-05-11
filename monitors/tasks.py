@@ -519,7 +519,7 @@ class IndicatorMonitoring(PeriodicTask):
             # email, but we will send separate alerts for new hosts and removed hosts as applicable.  The email should
             # contained sanitized values, but the alert(s) should use unsanitized values.
             sanitized_value = subtask.sanitize_value(lookup, indicator)
-            recipients = [owner.email]
+            recipients = [owner]
             subject = "Host Changes for %s Value: %s" % (type_name, sanitized_value)
             body = """
             %s lookup performed at %s has detected changes in the resolution of tracked %s value '%s':\n
@@ -561,15 +561,17 @@ class IndicatorMonitoring(PeriodicTask):
         :param indicator: The indicator for which an email is to be sent
         :param subject: The email subject
         :param body: The body text of the email
-        :param recipients: The list of email addresses to which the email should be sent
+        :param recipients: The list of owners to which emails should be sent.  (This should be a list of actual objects,
+        not just email strings, where the objects each correspond to the 'owner' member of an IndicatorLookupBase
+        instance.)
         :return: This method returns no values
         """
+        emails = [owner.email for owner in recipients]
         try:
-            core.tasks.deliver_email(subject=subject, body=body, recipients=recipients)
-            LOGGER.debug("Sent email to %s:\n%s\n\n%s", recipients, subject, body)
+            core.tasks.deliver_email(subject=subject, body=body, recipients=emails)
+            LOGGER.debug("Sent email to %s:\n%s\n\n%s", emails, subject, body)
         except Exception:
-            LOGGER.exception("Error sending email to %s", recipients)
+            LOGGER.exception("Error sending email to %s", emails)
             for owner in recipients:
-                IndicatorMonitoring.create_alert(indicator,
-                                                 "Error sending alert email.  Please consult server log.",
-                                                 owner)
+                message = "Error sending alert email to '%s'.  Please consult server log." % owner.email
+                IndicatorMonitoring.create_alert(indicator, message, owner)
