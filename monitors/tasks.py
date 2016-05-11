@@ -423,10 +423,10 @@ class IndicatorMonitoring(PeriodicTask):
         :param kwargs: Additional keyword arguments (this parameter is ignored)
         :return: This method returns no values
         """
-        LOGGER.info("Running monitor lookups...")
+        LOGGER.debug("Running monitor lookups...")
         for subtask in IndicatorMonitoring.SUBTASKS:
             self.do_indicator_lookups(subtask)
-        LOGGER.info("Monitor lookups complete.")
+        LOGGER.debug("Monitor lookups complete.")
 
     @staticmethod
     def get_lookups(lookup_type, current_time):
