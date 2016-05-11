@@ -53,7 +53,11 @@ General Instructions
      }
 
 6) Instantiate and sync your Django models
-     -- python3 manage.py syncdb
+     -- For NEW installations:
+            python3 manage.py syncdb
+     -- For EXISTING installations:
+            python3 manage.py migrate --fake-initial
+            python3 manage.py migrate
 
 7) Start celery worker daemons
      -- service celery_beat start
