@@ -50,7 +50,7 @@ def check_domain_valid(submission):
     :param submission: The submission to be checked
     :return: True if 'submission' is a valid domain, otherwise False
     """
-    return re.match(r"([A-Za-z0-9-]+(?:.[A-Za-z0-9-]+)*(?:.[A-Za-z]{2,}))", submission) is not None
+    return re.match("^([A-Za-z0-9-]+(?:\\.[A-Za-z0-9-]+)*(?:\\.[A-Za-z]{2,}))$", submission) is not None
 
 
 def discover_type(submission):
