@@ -78,6 +78,9 @@ Unit tests, on the other hand, may be run frequently and are fast. They do not h
 You can specify which tests to run by specifying the folder of the tests you wish to execute. Unit and integration
 tests are placed in separate folders, for this reason.
 
+Running the tests will create and destroy a temporary Postgres database during each run. You will need to ensure
+Postgres is configured correctly with the user account in secrets.json, but you won't need a database in place.
+
 1) Run all tests: From the project root directory (for example, /vagrant on Vagrant) run:
 `python3 manage.py test`
 
