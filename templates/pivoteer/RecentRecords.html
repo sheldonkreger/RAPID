@@ -20,7 +20,7 @@ Jump to:
         <tbody>
             {% for record in current_hosts %}
                 <tr>
-                    <td>{{ record.info_date }}</td>
+                    <td>{{ record.info_date|date:"N d, Y" }}</td>
                     <td>
                         {% if record.info.domain != origin %}
                             <span class="pivot">{{ record.info.domain }}</span>

@@ -10,7 +10,7 @@
     <tbody>
     {% for record in records %}
         <tr>
-            <th>{{ record.info_date }}</th>
+            <th>{{ record.info_date|date:"N d, Y h:i A" }}</th>
             <th>{{ record.info.body }}</th>
         </tr>
     {%  endfor %}
