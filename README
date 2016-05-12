@@ -67,3 +67,25 @@ in order to run locally, update manage.py and RAPID/celery.py:
 
     -- change 'os.environ.setdefault("DJANGO_SETTINGS_MODULE", "RAPID.settings.production")' to
         'os.environ.setdefault("DJANGO_SETTINGS_MODULE", "RAPID.settings.local")'
+
+Automated Testing
+
+The tests are split into two folders - 'integration_tests' and 'unit_tests'. Integration tests are time consuming
+because they make API calls. Running them frequently may not be a good idea since they will use up API credits.
+
+Unit tests, on the other hand, may be run frequently and are fast. They do not hit APIs.
+
+You can specify which tests to run by specifying the folder of the tests you wish to execute. Unit and integration
+tests are placed in separate folders, for this reason.
+
+Running the tests will create and destroy a temporary Postgres database during each run. You will need to ensure
+Postgres is configured correctly with the user account in secrets.json, but you won't need a database in place.
+
+1) Run all tests: From the project root directory (for example, /vagrant on Vagrant) run:
+`python3 manage.py test`
+
+2) To run only unit tests:
+`python3 manage.py test unit_tests`
+
+3) To run only integration tests:
+`python3 manage.py test integration_tests`
